@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>日历</title>
+<style>
+/* ============ 主题变量 ============ */
+:root{
+  --accent:#6366f1;
+  --accent-soft:rgba(99,102,241,.12);
+  --bg:#f5f6f9;
+  --panel:#ffffff;
+  --panel-2:#fafbfd;
+  --line:#e7e9ef;
+  --line-2:#f0f1f6;
+  --text:#1e2230;
+  --muted:#767e90;
+  --shadow:0 1px 2px rgba(20,24,40,.04),0 8px 24px rgba(20,24,40,.06);
+  --shadow-lg:0 24px 60px rgba(20,24,40,.22);
+  --hour:56px;         /* 每小时高度 */
+  --gutter:56px;       /* 左侧时间栏宽度（窄窗口会收窄） */
+  --radius:14px;
+  --today:rgba(99,102,241,.07);
+  --weekend:rgba(120,130,160,.05);
+}
+html[data-theme="dark"]{
+  --accent:#818cf8;
+  --accent-soft:rgba(129,140,248,.18);
+  --bg:#0f1115;
+  --panel:#171a21;
+  --panel-2:#1c2029;
+  --line:#272c37;
+  --line-2:#20242d;
+  --text:#e7e9ef;
+  --muted:#939bad;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  --shadow-lg:0 24px 60px rgba(0,0,0,.6);
+  --today:rgba(129,140,248,.12);
+  --weekend:rgba(255,255,255,.025);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font:14px/1.5 "Noto Sans CJK SC","Source Han Sans SC","PingFang SC",
+       system-ui,-apple-system,"Segoe UI",Ubuntu,Cantarell,"Helvetica Neue",sans-serif;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+  transition:background .25s,color .25s;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--muted);background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ============ 顶栏 ============ */
+.app{display:flex;flex-direction:column;height:100vh}
+.topbar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line);
+  box-shadow:0 1px 0 rgba(0,0,0,.01);z-index:20;
+}
+.bar-main{display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0}
+.bar-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto;margin-left:auto}
+#searchToggle{display:none}
+.brand{display:flex;align-items:center;gap:9px;font-weight:650;letter-spacing:.2px;margin-right:4px}
+.brand .dot{width:12px;height:12px;border-radius:4px;background:linear-gradient(135deg,#6366f1,#22d3ee);box-shadow:0 0 0 3px var(--accent-soft)}
+.title{font-size:18px;font-weight:650;min-width:190px;white-space:nowrap}
+.title small{font-weight:450;color:var(--muted);font-size:13px;margin-left:8px}
+.spacer{flex:1}
+.iconbtn{
+  width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+  color:var(--muted);transition:background .15s,color .15s,transform .1s;
+}
+.iconbtn:hover{background:var(--panel-2);color:var(--text)}
+.iconbtn:active{transform:scale(.94)}
+.iconbtn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px;border-radius:10px;
+  border:1px solid var(--line);background:var(--panel);font-weight:550;transition:.15s;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 4px 14px var(--accent-soft)}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.btn.ghost{border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{background:var(--panel-2);color:var(--text)}
+.seg{display:flex;background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px}
+.seg button{padding:5px 14px;border-radius:8px;color:var(--muted);font-weight:550;transition:.15s}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--panel);color:var(--accent);box-shadow:var(--shadow)}
+html[data-theme="dark"] .seg button.on{background:var(--accent);color:#fff;box-shadow:none}
+.searchwrap{position:relative;display:flex;align-items:center}
+.searchwrap svg{position:absolute;left:10px;width:15px;height:15px;stroke:var(--muted);fill:none;stroke-width:2}
+#search{
+  width:150px;height:34px;padding:0 10px 0 31px;border-radius:10px;
+  border:1px solid var(--line);background:var(--panel-2);outline:none;transition:.2s;
+}
+#search:focus{border-color:var(--accent);width:200px;background:var(--panel)}
+.menu{position:relative}
+.dropdown{
+  position:absolute;right:0;top:40px;min-width:190px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;display:none;z-index:60;
+}
+.dropdown.open{display:block;animation:pop .14s ease}
+@keyframes pop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.dropdown button{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border-radius:8px;text-align:left;color:var(--text)}
+.dropdown button:hover{background:var(--panel-2)}
+.dropdown hr{border:0;border-top:1px solid var(--line);margin:5px 4px}
+.dropdown button.danger:hover{background:rgba(244,63,94,.1);color:#f43f5e}
+.menu-note{padding:7px 10px 6px;font-size:11.5px;color:var(--muted);max-width:240px;line-height:1.45;word-break:break-all}
+
+/* ============ 视图容器 ============ */
+.view{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;background:var(--panel);margin:14px;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.week-head{display:grid;border-bottom:1px solid var(--line);background:var(--panel-2);flex:none}
+.week-head .hc{padding:9px 4px;text-align:center;border-left:1px solid var(--line-2);cursor:pointer;transition:.15s}
+.week-head .hc:first-child{border-left:0}
+.week-head .hc:hover{background:var(--accent-soft)}
+.week-head .dw{font-size:12px;color:var(--muted);font-weight:500}
+.week-head .dn{font-size:17px;font-weight:600;margin-top:1px;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%}
+.week-head .hc.today .dn{background:var(--accent);color:#fff}
+.week-head .hc.today .dw{color:var(--accent);font-weight:650}
+.week-head .hc.other .dn{color:var(--muted);opacity:.55}
+.gutterhead{border-left:0!important;background:transparent}
+
+.allday{display:grid;border-bottom:1px solid var(--line);background:var(--panel-2);flex:none;min-height:34px}
+.allday .lbl{display:flex;align-items:center;justify-content:flex-end;padding:0 10px;font-size:11.5px;color:var(--muted);border-right:1px solid var(--line-2)}
+.allday .ac{padding:3px;display:flex;flex-direction:column;gap:3px;border-left:1px solid var(--line-2);min-height:30px}
+.allday .lbl + .ac{border-left:0}
+
+.scroller{flex:1;overflow:auto;position:relative;scrollbar-gutter:stable}
+.grid{display:grid;position:relative}
+.gutter{position:relative}
+.gutter div{height:var(--hour);font-size:11px;color:var(--muted);text-align:right;padding:2px 8px 0 0;user-select:none}
+.gutter div span{background:var(--panel);padding:0 3px;border-radius:4px}
+.cols{display:grid;position:relative}
+.col{position:relative;border-left:1px solid var(--line-2)}
+.col:first-child{border-left:0}
+.col.weekend{background:var(--weekend)}
+.col.today{background:var(--today)}
+.slot{height:var(--hour);border-top:1px solid var(--line-2);cursor:pointer;transition:background .12s}
+.slot:hover{background:var(--accent-soft)}
+.col .slot:first-child{border-top:0}
+.nowline{position:absolute;left:0;right:0;height:0;border-top:2px solid #f43f5e;z-index:5;pointer-events:none}
+.nowline::before{content:"";position:absolute;left:-4px;top:-5px;width:9px;height:9px;border-radius:50%;background:#f43f5e}
+
+/* 事件块 */
+.ev{
+  position:absolute;left:1px;right:1px;border-radius:8px;padding:3px 7px 3px 9px;overflow:hidden;
+  cursor:pointer;z-index:4;transition:box-shadow .15s,transform .08s,filter .15s;
+  background:rgba(var(--c),.16);border:1px solid rgba(var(--c),.30);
+}
+.ev::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3.5px;background:rgb(var(--c))}
+html[data-theme="dark"] .ev{background:rgba(var(--c),.20);border-color:rgba(var(--c),.38)}
+.ev:hover{box-shadow:0 4px 14px rgba(var(--c),.35);filter:saturate(1.15);z-index:9}
+.ev .t{font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
+.ev .tm{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-theme="dark"] .ev .tm{color:rgba(231,233,239,.72)}
+.ev.done .t{text-decoration:line-through;opacity:.55}
+.ev.dragging{opacity:.55;transform:scale(.98);box-shadow:0 12px 28px rgba(0,0,0,.28)}
+.ev .grip{cursor:grab}
+
+/* 月视图 */
+.month{display:grid;flex:1;grid-template-rows:repeat(6,minmax(0,1fr));min-height:0}
+.mrow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--line);min-height:0}
+.mrow:last-child{border-bottom:0}
+.cell{
+  position:relative;border-left:1px solid var(--line);padding:6px 6px 4px;min-height:0;overflow:hidden;
+  display:flex;flex-direction:column;gap:3px;cursor:pointer;transition:background .12s;
+}
+.cell:first-child{border-left:0}
+.cell:hover{background:var(--panel-2)}
+.cell.weekend{background:var(--weekend)}
+.cell.other{background:var(--panel-2)}
+.cell.other .num{color:var(--muted);opacity:.6}
+.cell.today{background:var(--today)}
+.cell.drop{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.cell .num{font-size:12.5px;font-weight:600;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;flex:none}
+.cell.today .num{background:var(--accent);color:#fff}
+.cell .add{position:absolute;right:5px;top:5px;width:22px;height:22px;border-radius:7px;display:none;place-items:center;color:var(--accent);background:var(--panel);border:1px solid var(--line);font-size:15px;line-height:1}
+.cell:hover .add{display:grid}
+.chip{
+  display:flex;align-items:center;gap:5px;padding:2px 6px;border-radius:7px;font-size:12px;line-height:1.45;
+  background:rgba(var(--c),.15);border-left:3px solid rgb(var(--c));
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.12s;
+}
+.chip:hover{background:rgba(var(--c),.28)}
+.chip.done{opacity:.5;text-decoration:line-through}
+.chip .ct{color:var(--muted);font-size:10.5px;font-variant-numeric:tabular-nums}
+.chip.dragging{opacity:.5}
+.more{font-size:11.5px;color:var(--muted);padding:1px 6px;border-radius:6px}
+.more:hover{background:var(--panel);color:var(--accent)}
+/* 小窗口里的周视图：按天分组的议程列表 */
+.agenda{flex:1;overflow:auto;padding:4px 10px 16px}
+.ag-day{padding:7px 0;border-bottom:1px solid var(--line-2)}
+.ag-day:last-child{border-bottom:0}
+.ag-head{display:flex;align-items:center;gap:8px;cursor:pointer;padding:3px 6px;border-radius:9px;transition:background .12s}
+.ag-head:hover{background:var(--panel-2)}
+.ag-dw{font-size:12px;color:var(--muted);width:32px}
+.ag-dn{font-size:15px;font-weight:650;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;flex:none}
+.ag-day.today .ag-dn{background:var(--accent);color:#fff}
+.ag-day.today .ag-dw{color:var(--accent);font-weight:650}
+.ag-count{margin-left:auto;font-size:11.5px;color:var(--muted)}
+.ag-list{display:flex;flex-direction:column;gap:4px;padding:5px 0 0 40px}
+.ag-item{display:flex;gap:8px;align-items:baseline;padding:5px 9px;border-radius:9px;
+  background:rgba(var(--c),.15);border-left:3px solid rgb(var(--c));cursor:pointer;transition:.12s}
+.ag-item:hover{background:rgba(var(--c),.28)}
+.ag-item .ag-time{font-size:11.5px;color:var(--muted);min-width:38px;font-variant-numeric:tabular-nums}
+.ag-item .ag-title{font-size:13px;font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ag-item.done .ag-title{text-decoration:line-through;opacity:.55}
+.ag-empty{font-size:12px;color:var(--muted);padding:2px 9px;opacity:.8}
+/* 农历 / 节假日 */
+.ctop{display:flex;align-items:center;gap:4px}
+.ctop .add{margin-left:auto}
+.cell .lunar{font-size:11px;color:var(--muted);padding:0 2px;line-height:1.45;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.cell .lunar.fest{color:#d92d20;font-weight:600}
+html[data-theme="dark"] .cell .lunar.fest{color:#ff9a9a}
+.cell.off{background:rgba(217,45,32,.05)}
+html[data-theme="dark"] .cell.off{background:rgba(244,63,94,.09)}
+.cell.off .num{color:#d92d20}
+html[data-theme="dark"] .cell.off .num{color:#ff9a9a}
+.cell.today.off .num{color:#fff}
+.badge{font-size:10px;font-weight:650;line-height:15px;padding:0 4px;border-radius:4px;flex:none}
+.badge.off{background:rgba(217,45,32,.12);color:#d92d20}
+html[data-theme="dark"] .badge.off{background:rgba(244,63,94,.22);color:#ff9a9a}
+.badge.work{background:var(--panel-2);color:var(--muted);border:1px solid var(--line)}
+.week-head .lm{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.week-head .lm.fest{color:#d92d20;font-weight:600}
+html[data-theme="dark"] .week-head .lm.fest{color:#ff9a9a}
+.week-head .hc.off .dn{color:#d92d20}
+html[data-theme="dark"] .week-head .hc.off .dn{color:#ff9a9a}
+.week-head .hc.work .dn{color:var(--muted)}
+.lunar-big{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lunar-big b{color:#d92d20;font-weight:650}
+html[data-theme="dark"] .lunar-big b{color:#ff9a9a}
+.ag-lunar{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-lunar.fest{color:#d92d20;font-weight:600}
+html[data-theme="dark"] .ag-lunar.fest{color:#ff9a9a}
+/* 小窗口里用色点代替文字，避免挤成一团 */
+.dots{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:2px 2px 0}
+.dots i{width:7px;height:7px;border-radius:50%;background:rgb(var(--c));display:block;flex:none}
+.dots u{font-size:10px;color:var(--muted);text-decoration:none;margin-left:2px}
+
+/* 空状态 */
+.empty{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.empty .box{pointer-events:auto;text-align:center;color:var(--muted);max-width:340px}
+.empty h3{margin:0 0 6px;color:var(--text);font-size:16px}
+.empty p{margin:0 0 14px;font-size:13px}
+
+/* ============ 弹窗 ============ */
+.backdrop{position:fixed;inset:0;background:rgba(14,17,25,.45);backdrop-filter:blur(3px);display:none;z-index:80;align-items:center;justify-content:center;padding:20px}
+.backdrop.open{display:flex;animation:fade .16s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{
+  width:100%;max-width:460px;background:var(--panel);border:1px solid var(--line);border-radius:18px;
+  box-shadow:var(--shadow-lg);overflow:hidden;animation:rise .2s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.sheet header{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.sheet header h2{margin:0;font-size:15px;font-weight:650;flex:1}
+.sheet .body{padding:15px 16px;display:flex;flex-direction:column;gap:12px;max-height:66vh;overflow:auto}
+.sheet footer{display:flex;align-items:center;gap:9px;padding:13px 16px;border-top:1px solid var(--line);background:var(--panel-2)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;color:var(--muted);font-weight:550}
+.field input[type=text],.field input[type=date],.field input[type=time],.field select,.field textarea{
+  height:38px;padding:0 11px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);
+  outline:none;transition:.15s;width:100%;
+}
+.field textarea{height:auto;min-height:62px;padding:9px 11px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);background:var(--panel);box-shadow:0 0 0 3px var(--accent-soft)}
+.row{display:flex;gap:10px}
+.row>*{flex:1;min-width:0}
+.checks{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.check{display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;user-select:none}
+.check input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:26px;height:26px;border-radius:9px;background:rgb(var(--c));cursor:pointer;border:2px solid transparent;transition:.15s;position:relative}
+.sw:hover{transform:scale(1.12)}
+.sw.on{border-color:var(--text);box-shadow:0 0 0 2px var(--panel) inset}
+.hint{font-size:11.5px;color:var(--muted)}
+.series-tip{background:var(--accent-soft);color:var(--accent);font-size:12px;padding:7px 10px;border-radius:9px;font-weight:550}
+
+/* Toast */
+.toast{
+  position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:#1e2230;color:#fff;
+  padding:10px 16px;border-radius:11px;box-shadow:var(--shadow-lg);font-size:13px;opacity:0;pointer-events:none;
+  transition:.22s;z-index:120;display:flex;align-items:center;gap:10px;
+}
+html[data-theme="dark"] .toast{background:#2b303c}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast button{color:#a5b4fc;font-weight:600}
+
+/* 快捷键帮助 */
+kbd{background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 5px;font-size:11px;font-family:inherit}
+.shortcuts{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:13px;align-items:center}
+/* ============ 窄窗口 / 小窗口模式 ============ */
+@media (max-width:820px){
+  :root{--gutter:48px}
+  .title{font-size:16px;min-width:0}
+  .brand span{display:none}
+  #search{width:120px}
+  .ev .tm{display:none}
+  .ev .t{font-size:12px}
+  .view{margin:10px}
+}
+@media (max-width:640px){
+  :root{--gutter:42px}
+  .topbar{padding:8px 10px;gap:6px}
+  .brand{display:none}
+  .title{font-size:15px}
+  .title small{display:block;margin-left:0;font-size:11.5px}
+  .bar-main{flex:1 1 100%;order:1}
+  .bar-actions{flex:1 1 100%;order:2;margin-left:0}
+  .searchwrap{display:none;flex:1 1 100%;order:3}
+  body.searching .searchwrap{display:flex}
+  #search,#search:focus{width:100%}
+  #searchToggle{display:grid}
+  .btn{padding:0 10px}
+  .btn .btn-label{display:none}
+  .seg button{padding:5px 11px}
+  .gutter div{font-size:10px;padding-right:5px}
+  .week-head .dn{font-size:15px;width:26px;height:26px}
+  .week-head .dw{font-size:11px}
+  .allday .lbl{font-size:10.5px;padding:0 6px}
+  .view{margin:8px;border-radius:12px}
+  .backdrop{padding:10px}
+  .sheet{max-width:100%}
+  .chip{font-size:11.5px}
+  .cell .lunar{font-size:10px}
+  .week-head .lm{font-size:9.5px}
+  .lunar-big,.ag-lunar{font-size:11px}
+}
+@media (max-width:420px){
+  #theme{display:none}
+  .title{font-size:14px}
+  .title small{font-size:11px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ===== 顶栏 ===== -->
+  <div class="topbar">
+    <div class="bar-main">
+      <div class="brand"><i class="dot"></i><span>日历</span></div>
+      <button class="btn ghost" id="today">今天</button>
+      <button class="iconbtn" id="prev" title="上一页 (←)">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="iconbtn" id="next" title="下一页 (→)">
+        <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <div class="title" id="title"></div>
+    </div>
+    <div class="bar-actions">
+      <div class="searchwrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="search" type="text" placeholder="搜索事项  /" autocomplete="off">
+      </div>
+      <button class="iconbtn" id="searchToggle" title="搜索 (/)">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      </button>
+      <div class="seg" id="views">
+        <button data-view="day">日</button>
+        <button data-view="week">周</button>
+        <button data-view="month">月</button>
+      </div>
+      <button class="btn primary" id="new">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="btn-label">新建</span>
+      </button>
+      <button class="iconbtn" id="theme" title="切换主题"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg></button>
+      <div class="menu">
+        <button class="iconbtn" id="more" title="更多">
+          <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <div class="dropdown" id="dropdown">
+          <div class="menu-note" id="mStorage">数据：浏览器本地存储</div>
+          <div class="menu-note" id="mHoliday">节假日：加载中…</div>
+          <hr>
+          <button id="mExport">导出备份 (.json)</button>
+          <button id="mImport">导入备份…</button>
+          <button id="mSample">载入示例事项</button>
+          <hr>
+          <button id="mHelp">快捷键</button>
+          <button id="mClear" class="danger">清空全部事项</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 视图 ===== -->
+  <div class="view" id="view"></div>
+</div>
+
+<!-- ===== 编辑弹窗 ===== -->
+<div class="backdrop" id="editor">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <header>
+      <h2 id="edTitle">新建事项</h2>
+      <button class="iconbtn" id="edClose"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="body">
+      <div class="series-tip" id="seriesTip" style="display:none"></div>
+      <div class="field">
+        <label>事项</label>
+        <input type="text" id="fTitle" placeholder="例如：项目周会 / 阅读 30 分钟" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>日期</label>
+        <input type="date" id="fDate">
+        <div class="hint" id="fDateInfo"></div>
+      </div>
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="fAllDay"> 全天</label>
+        <label class="check"><input type="checkbox" id="fDone"> 已完成</label>
+      </div>
+      <div class="row" id="timeRow">
+        <div class="field"><label>开始</label><input type="time" id="fStart" step="300"></div>
+        <div class="field"><label>结束</label><input type="time" id="fEnd" step="300"></div>
+      </div>
+      <div class="field">
+        <label>重复</label>
+        <div class="row">
+          <select id="fRepeat">
+            <option value="none">不重复</option>
+            <option value="daily">每天</option>
+            <option value="weekly">每周</option>
+            <option value="monthly">每月</option>
+          </select>
+          <input type="date" id="fUntil" title="重复结束日期">
+        </div>
+        <div class="hint">右侧留空表示一直重复；填写则为重复的结束日期。</div>
+      </div>
+      <div class="field">
+        <label>颜色</label>
+        <div class="swatches" id="fColors"></div>
+      </div>
+      <div class="field">
+        <label>备注</label>
+        <textarea id="fNote" placeholder="可选：地点、链接、备注…"></textarea>
+      </div>
+    </div>
+    <footer>
+      <button class="btn" id="edDelete" style="display:none;color:#f43f5e;border-color:rgba(244,63,94,.35)">删除</button>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="edCancel">取消</button>
+      <button class="btn primary" id="edSave">保存</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ===== 快捷键弹窗 ===== -->
+<div class="backdrop" id="help">
+  <div class="sheet" style="max-width:400px">
+    <header><h2>快捷键</h2><button class="iconbtn" data-close-help><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></header>
+    <div class="body">
+      <div class="shortcuts">
+        <kbd>N</kbd><span>新建事项</span>
+        <kbd>D</kbd><span>日视图</span>
+        <kbd>W</kbd><span>周视图</span>
+        <kbd>M</kbd><span>月视图</span>
+        <kbd>T</kbd><span>回到今天</span>
+        <kbd>← →</kbd><span>上一 / 下一时间段</span>
+        <kbd>/</kbd><span>搜索</span>
+        <kbd>Ctrl + S</kbd><span>弹窗内保存</span>
+        <kbd>Esc</kbd><span>关闭弹窗 / 清空搜索</span>
+      </div>
+      <div class="hint">提示：单击日历空白处可直接新建；拖动事项可改时间；月视图里点日期数字进入日视图。</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept=".json,application/json" style="display:none">
+
+<script>
+"use strict";
+/* =====================================================================
+   本地日历 · 单文件应用
+   数据保存在浏览器 localStorage（本机、离线、不上传）
+   ===================================================================== */
+
+/* ---------- 工具 ---------- */
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseYMD = s => { const [y, m, d] = String(s).split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const addMonths = (d, n) => {
+  const x = new Date(d.getFullYear(), d.getMonth() + n, 1);
+  const last = new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate();
+  x.setDate(Math.min(d.getDate(), last));
+  return x;
+};
+const startOfWeek = d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+const isToday = d => sameDay(d, new Date());
+const WD = ["周日","周一","周二","周三","周四","周五","周六"];
+const WD1 = ["一","二","三","四","五","六","日"];
+/* ISO 周号 */
+function weekNumber(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dn = (t.getUTCDay() + 6) % 7;
+  t.setUTCDate(t.getUTCDate() - dn + 3);
+  const first = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  first.setUTCDate(first.getUTCDate() - ((first.getUTCDay() + 6) % 7) + 3);
+  return 1 + Math.round((t - first) / (7 * 86400000));
+}
+const toMin = t => { const [h, m] = String(t || "0:0").split(":").map(Number); return h * 60 + (m || 0); };
+const fromMin = v => `${pad(Math.floor(v / 60) % 24)}:${pad(Math.round(v) % 60)}`;
+const hhmm = t => String(t || "").slice(0, 5);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const COLORS = ["indigo","blue","teal","green","amber","rose","violet","slate"];
+const RGB = {
+  indigo:[99,102,241], blue:[56,132,246], teal:[20,184,166], green:[34,197,94],
+  amber:[240,158,20], rose:[244,63,94], violet:[168,85,247], slate:[100,116,139]
+};
+const CNAME = { indigo:"靛蓝", blue:"天蓝", teal:"青绿", green:"翠绿", amber:"琥珀", rose:"玫红", violet:"紫罗兰", slate:"岩灰" };
+
+const HOUR = 56;              // 每小时高度(px)，与 CSS --hour 保持一致
+const STORE = "local-calendar-v1";
+
+/* =====================================================================
+   农历（1900–2100 经典算法）与传统节日
+   ===================================================================== */
+const LUNAR_INFO = [
+0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,
+0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,
+0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,
+0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,
+0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,
+0x06ca0,0x0b550,0x15355,0x04da0,0x0a5b0,0x14573,0x052b0,0x0a9a8,0x0e950,0x06aa0,
+0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,
+0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b6a0,0x195a6,
+0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,
+0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06b58,0x055c0,0x0ab60,0x096d5,0x092e0,
+0x0c960,0x0d954,0x0d4a0,0x0da50,0x07552,0x056a0,0x0abb7,0x025d0,0x092d0,0x0cab5,
+0x0a950,0x0b4a0,0x0baa4,0x0ad50,0x055d9,0x04ba0,0x0a5b0,0x15176,0x052b0,0x0a930,
+0x07954,0x06aa0,0x0ad50,0x05b52,0x04b60,0x0a6e6,0x0a4e0,0x0d260,0x0ea65,0x0d530,
+0x05aa0,0x076a3,0x096d0,0x04afb,0x04ad0,0x0a4d0,0x1d0b6,0x0d250,0x0d520,0x0dd45,
+0x0b5a0,0x056d0,0x055b2,0x049b0,0x0a577,0x0a4b0,0x0aa50,0x1b255,0x06d20,0x0ada0,
+0x14b63,0x09370,0x049f8,0x04970,0x064b0,0x168a6,0x0ea50,0x06b20,0x1a6c4,0x0aae0,
+0x0a2e0,0x0d2e3,0x0c960,0x0d557,0x0d4a0,0x0da50,0x05d55,0x056a0,0x0a6d0,0x055d4,
+0x052d0,0x0a9b8,0x0a950,0x0b4a0,0x0b6a6,0x0ad50,0x055a0,0x0aba4,0x0a5b0,0x052b0,
+0x0b273,0x06930,0x07337,0x06aa0,0x0ad50,0x14b55,0x04b60,0x0a570,0x054e4,0x0d160,
+0x0e968,0x0d520,0x0daa0,0x16aa6,0x056d0,0x04ae0,0x0a9d4,0x0a2d0,0x0d150,0x0f252,
+0x0d520];
+const LMONTH = ["", "正月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "冬月", "腊月"];
+const LDAY = (() => {
+  const p = ["初", "十", "廿", "三"], d = ["日", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+  const out = [""];
+  for (let i = 1; i <= 30; i++) {
+    if (i === 10) out.push("初十");
+    else if (i === 20) out.push("二十");
+    else if (i === 30) out.push("三十");
+    else out.push(p[Math.floor(i / 10)] + d[i % 10]);
+  }
+  return out;
+})();
+const LUNAR_FESTIVAL = {
+  "1-1": "春节", "1-15": "元宵节", "2-2": "龙抬头", "5-5": "端午节",
+  "7-7": "七夕节", "7-15": "中元节", "8-15": "中秋节", "9-9": "重阳节",
+  "12-8": "腊八节", "12-23": "小年"
+};
+
+const lLeapMonth = y => LUNAR_INFO[y - 1900] & 0xf;
+const lLeapDays = y => !lLeapMonth(y) ? 0 : ((LUNAR_INFO[y - 1900] & 0x10000) ? 30 : 29);
+const lMonthDays = (y, m) => (LUNAR_INFO[y - 1900] & (0x10000 >> m)) ? 30 : 29;
+function lYearDays(y) {
+  let sum = 348;
+  for (let i = 0x8000; i > 0x8; i >>= 1) if (LUNAR_INFO[y - 1900] & i) sum++;
+  return sum + lLeapDays(y);
+}
+
+function solarToLunar(date) {
+  let offset = Math.round((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(1900, 0, 31)) / 86400000);
+  let i = 1900, temp = 0;
+  while (i < 2101 && offset > 0) { temp = lYearDays(i); offset -= temp; i++; }
+  if (offset < 0) { offset += temp; i--; }
+  const year = i, leap = lLeapMonth(year);
+  let isLeap = false, j = 1;
+  while (j < 13 && offset > 0) {
+    if (leap > 0 && j === leap + 1 && !isLeap) { j--; isLeap = true; temp = lLeapDays(year); }
+    else temp = lMonthDays(year, j);
+    if (isLeap && j === leap + 1) isLeap = false;
+    offset -= temp; j++;
+  }
+  if (offset === 0 && leap > 0 && j === leap + 1) {
+    if (isLeap) isLeap = false; else { isLeap = true; j--; }
+  }
+  if (offset < 0) { offset += temp; j--; }
+  return { year: year, month: j, day: offset + 1, leap: isLeap };
+}
+
+const lunarCache = new Map();
+function lunarOf(date) {
+  const key = ymd(date);
+  const hit = lunarCache.get(key);
+  if (hit) return hit;
+  const l = solarToLunar(date);
+  const nx = solarToLunar(addDays(date, 1));
+  const festival = (nx.month === 1 && nx.day === 1) ? "除夕" : (LUNAR_FESTIVAL[l.month + "-" + l.day] || "");
+  const prefix = l.leap ? "闰" : "";
+  const info = {
+    year: l.year, month: l.month, day: l.day, leap: l.leap,
+    monthName: prefix + LMONTH[l.month], dayName: LDAY[l.day], festival: festival,
+    text: prefix + LMONTH[l.month] + LDAY[l.day],
+    short: festival || (l.day === 1 ? prefix + LMONTH[l.month] : LDAY[l.day])
+  };
+  lunarCache.set(key, info);
+  return info;
+}
+
+/* =====================================================================
+   工作日 / 节假日
+   off  = 法定放假（含调休连休）；work = 调休上班
+   数据由 tools/make-holidays.py 依据国务院办公厅通知生成；
+   若同目录存在 holidays.json，则以该文件为准（便于每年更新）
+   ===================================================================== */
+const HOLIDAY_BUILTIN = {"2024":{"source":"国办发明电〔2023〕7号","url":"https://www.gov.cn/gongbao/2023/issue_10806/202311/content_6913823.html","off":{"2024-01-01":"元旦","2024-02-10":"春节","2024-02-11":"春节","2024-02-12":"春节","2024-02-13":"春节","2024-02-14":"春节","2024-02-15":"春节","2024-02-16":"春节","2024-02-17":"春节","2024-04-04":"清明节","2024-04-05":"清明节","2024-04-06":"清明节","2024-05-01":"劳动节","2024-05-02":"劳动节","2024-05-03":"劳动节","2024-05-04":"劳动节","2024-05-05":"劳动节","2024-06-10":"端午节","2024-09-15":"中秋节","2024-09-16":"中秋节","2024-09-17":"中秋节","2024-10-01":"国庆节","2024-10-02":"国庆节","2024-10-03":"国庆节","2024-10-04":"国庆节","2024-10-05":"国庆节","2024-10-06":"国庆节","2024-10-07":"国庆节"},"work":{"2024-02-04":"补班","2024-02-18":"补班","2024-04-07":"补班","2024-04-28":"补班","2024-05-11":"补班","2024-09-14":"补班","2024-09-29":"补班","2024-10-12":"补班"}},"2025":{"source":"国办发明电〔2024〕12号","url":"http://big5.www.gov.cn/gate/big5/www.gov.cn/gongbao/2024/issue_11726/202411/content_6989767.html","off":{"2025-01-01":"元旦","2025-01-28":"春节","2025-01-29":"春节","2025-01-30":"春节","2025-01-31":"春节","2025-02-01":"春节","2025-02-02":"春节","2025-02-03":"春节","2025-02-04":"春节","2025-04-04":"清明节","2025-04-05":"清明节","2025-04-06":"清明节","2025-05-01":"劳动节","2025-05-02":"劳动节","2025-05-03":"劳动节","2025-05-04":"劳动节","2025-05-05":"劳动节","2025-05-31":"端午节","2025-06-01":"端午节","2025-06-02":"端午节","2025-10-01":"国庆节·中秋节","2025-10-02":"国庆节·中秋节","2025-10-03":"国庆节·中秋节","2025-10-04":"国庆节·中秋节","2025-10-05":"国庆节·中秋节","2025-10-06":"国庆节·中秋节","2025-10-07":"国庆节·中秋节","2025-10-08":"国庆节·中秋节"},"work":{"2025-01-26":"补班","2025-02-08":"补班","2025-04-27":"补班","2025-09-28":"补班","2025-10-11":"补班"}},"2026":{"source":"国办发明电〔2025〕7号","url":"https://www.gov.cn/zhengce/content/202511/content_7047090.htm","off":{"2026-01-01":"元旦","2026-01-02":"元旦","2026-01-03":"元旦","2026-02-15":"春节","2026-02-16":"春节","2026-02-17":"春节","2026-02-18":"春节","2026-02-19":"春节","2026-02-20":"春节","2026-02-21":"春节","2026-02-22":"春节","2026-02-23":"春节","2026-04-04":"清明节","2026-04-05":"清明节","2026-04-06":"清明节","2026-05-01":"劳动节","2026-05-02":"劳动节","2026-05-03":"劳动节","2026-05-04":"劳动节","2026-05-05":"劳动节","2026-06-19":"端午节","2026-06-20":"端午节","2026-06-21":"端午节","2026-09-25":"中秋节","2026-09-26":"中秋节","2026-09-27":"中秋节","2026-10-01":"国庆节","2026-10-02":"国庆节","2026-10-03":"国庆节","2026-10-04":"国庆节","2026-10-05":"国庆节","2026-10-06":"国庆节","2026-10-07":"国庆节"},"work":{"2026-01-04":"补班","2026-02-14":"补班","2026-02-28":"补班","2026-05-09":"补班","2026-09-20":"补班","2026-10-10":"补班"}}};
+let HOLIDAYS = HOLIDAY_BUILTIN;
+let holidayNote = "";
+
+function holidayOf(key) {
+  const doc = HOLIDAYS[key.slice(0, 4)];
+  if (!doc) return { off: "", work: "" };
+  return { off: doc.off[key] || "", work: doc.work[key] || "" };
+}
+const holidayYears = () => Object.keys(HOLIDAYS).sort();
+
+/* 一天的全部附加信息：农历、传统节日、放假/调休 */
+function dayMeta(date) {
+  const key = ymd(date);
+  const lunar = lunarOf(date);
+  const h = holidayOf(key);
+  const wd = date.getDay();
+  const weekend = wd === 0 || wd === 6;
+  const off = h.off, work = h.work;      // 保留名称（"国庆节"/"补班"），空串表示不是
+  return {
+    key: key, lunar: lunar, off: off, work: work, weekend: weekend,
+    rest: (!!off || weekend) && !work,
+    label: off || lunar.festival || lunar.short
+  };
+}
+
+async function loadHolidays() {
+  try {
+    const r = await fetch("holidays.json", { cache: "no-store" });
+    if (!r.ok) return false;
+    const doc = await r.json();
+    if (!doc || !doc.years || typeof doc.years !== "object") return false;
+    const merged = Object.assign({}, HOLIDAY_BUILTIN);
+    Object.keys(doc.years).forEach(y => { merged[y] = doc.years[y]; });
+    HOLIDAYS = merged;
+    holidayNote = doc.version || "";
+    updateHolidayNote();
+    render();
+    return true;
+  } catch (e) {
+    return false;   // 没有外部数据文件时用内置表
+  }
+}
+
+function updateHolidayNote() {
+  const el = document.getElementById("mHoliday");
+  if (!el) return;
+  const ys = holidayYears();
+  el.textContent = "节假日：" + ys[0] + "–" + ys[ys.length - 1] + " 年 · 休 = 放假，班 = 调休上班";
+  el.title = ys.map(y => y + "  " + (HOLIDAYS[y].source || "")).join("\n") +
+    "\n（可用同目录的 holidays.json 覆盖，或用 tools/make-holidays.py 更新）";
+}
+
+/* ---------- 状态 ---------- */
+let state = {
+  events: [],
+  view: "month",
+  cursor: new Date(),
+  theme: "auto",
+  query: ""
+};
+let editing = null;           // {mode:'new'|'edit', data:{...}, seriesDate:null|'YYYY-MM-DD'}
+let dirtyScroll = true;
+let storageOK = true;
+
+/* ---------- 持久化：本地 JSON 文件优先，浏览器存储兜底 ---------- */
+const HAS_SERVER = /^https?:$/.test(location.protocol);
+let storageMode = HAS_SERVER ? "file" : "browser";
+let dataFile = "";
+let dirtySinceBoot = false;
+let saveTimer = null;
+
+function applyDoc(d) {
+  if (!d) return;
+  if (Array.isArray(d.events)) state.events = d.events.map(normalize);
+  if (d.view) state.view = d.view;
+  if (d.theme) state.theme = d.theme;
+}
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(STORE);
+    if (raw) applyDoc(JSON.parse(raw));
+  } catch (e) {
+    storageOK = false;
+    console.warn("读取本地数据失败：", e);
+  }
+}
+const localStamp = () => { try { return Number(localStorage.getItem(STORE + "-at") || 0); } catch (e) { return 0; } };
+
+function mirrorLocal(at) {
+  if (!storageOK) return;
+  try {
+    localStorage.setItem(STORE, JSON.stringify({ events: state.events, view: state.view, theme: state.theme }));
+    localStorage.setItem(STORE + "-at", String(at || Date.now()));
+  } catch (e) {
+    storageOK = false;
+  }
+}
+
+/* 保存：浏览器镜像立即写，数据文件写入做 300ms 防抖 */
+function save() {
+  dirtySinceBoot = true;
+  mirrorLocal();
+  if (!HAS_SERVER || storageMode !== "file") return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(pushToServer, 300);
+}
+
+async function pushToServer() {
+  clearTimeout(saveTimer); saveTimer = null;
+  if (!HAS_SERVER) return;
+  try {
+    const r = await fetch("/api/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ events: state.events, updatedAt: Date.now() })
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+  } catch (e) {
+    if (storageMode === "file") toast("写入数据文件失败，已暂存在浏览器里");
+  }
+}
+
+/* 启动后与数据文件对齐：文件更新则采用文件，浏览器里更新则迁移进文件 */
+async function syncFromServer() {
+  if (!HAS_SERVER) { updateStorageLabel(); return; }
+  let doc = null;
+  try {
+    doc = await (await fetch("/api/load", { cache: "no-store" })).json();
+  } catch (e) {
+    storageMode = "browser";
+    updateStorageLabel();
+    return;
+  }
+  storageMode = "file";
+  if (doc && doc.dataFile) dataFile = doc.dataFile;
+  const serverAt = Number(doc && doc.updatedAt) || 0;
+  const localAt = localStamp();
+  if (!dirtySinceBoot && serverAt > localAt) {
+    applyDoc(doc);
+    mirrorLocal(serverAt);
+    dirtyScroll = true;      // 事项到位后重新定位到第一个事项
+    render();
+  } else if (!dirtySinceBoot && localAt > serverAt && state.events.length) {
+    pushToServer();
+  }
+  updateStorageLabel();
+}
+
+function updateStorageLabel() {
+  const el = document.getElementById("mStorage");
+  if (!el) return;
+  if (storageMode === "file" && dataFile) {
+    el.textContent = "数据文件：" + dataFile.replace(/^\/home\/[^/]+/, "~");
+    el.title = dataFile;
+  } else {
+    el.textContent = "数据：浏览器本地存储（未连接本地服务）";
+  }
+}
+function normalize(e) {
+  return {
+    id: e.id || uid(),
+    title: String(e.title || "未命名事项"),
+    date: e.date || ymd(new Date()),
+    start: e.start || "",
+    end: e.end || "",
+    allDay: !!e.allDay || !e.start,
+    color: COLORS.includes(e.color) ? e.color : "indigo",
+    note: e.note || "",
+    done: !!e.done,
+    repeat: ["daily","weekly","monthly"].includes(e.repeat) ? e.repeat : "none",
+    until: e.until || "",
+    skip: Array.isArray(e.skip) ? e.skip.slice() : []
+  };
+}
+const getEvent = id => state.events.find(e => e.id === id);
+
+/* ---------- 主题 ---------- */
+function applyTheme() {
+  const dark = state.theme === "dark" ||
+    (state.theme === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+}
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (state.theme === "auto") applyTheme();
+});
+
+/* ---------- 重复事项展开 ---------- */
+function occurrences(from, to) {
+  // from/to: Date（含首尾当天）
+  const out = [];
+  const q = state.query.trim().toLowerCase();
+  const DAY = 86400000;
+  for (const ev of state.events) {
+    if (q) {
+      const hay = (ev.title + " " + ev.note).toLowerCase();
+      if (!hay.includes(q)) continue;
+    }
+    const base = parseYMD(ev.date);
+    if (ev.repeat === "none") {
+      if (base >= from && base <= to && !ev.skip.includes(ev.date)) out.push({ ev, date: ev.date });
+      continue;
+    }
+    const until = ev.until ? parseYMD(ev.until) : null;
+    // 直接跳到可见区间的第 n 次，避免远期区间逐日循环
+    let i = 0;
+    if (ev.repeat === "daily") i = Math.max(0, Math.floor((from - base) / DAY));
+    else if (ev.repeat === "weekly") i = Math.max(0, Math.floor((from - base) / (7 * DAY)));
+    else i = Math.max(0, (from.getFullYear() - base.getFullYear()) * 12 + (from.getMonth() - base.getMonth()) - 1);
+    let guard = 0;
+    while (guard++ < 500) {
+      // 始终基于起始日期推算，保证「每月 31 号」在 2 月截断后能回到 31 号
+      const cur = ev.repeat === "daily" ? addDays(base, i)
+        : ev.repeat === "weekly" ? addDays(base, 7 * i)
+          : addMonths(base, i);
+      if (cur > to) break;
+      if (until && cur > until) break;
+      if (cur >= from) {
+        const ds = ymd(cur);
+        if (!ev.skip.includes(ds)) out.push({ ev, date: ds });
+      }
+      i++;
+    }
+  }
+  return out;
+}
+
+/* ---------- 布局：重叠事件分列 ---------- */
+function layoutDay(list) {
+  const items = list.map(o => ({
+    ...o,
+    s: o.ev.allDay ? 0 : toMin(o.ev.start),
+    e: o.ev.allDay ? 0 : Math.max(toMin(o.ev.start) + 20, toMin(o.ev.end) )
+  })).sort((a, b) => a.s - b.s || a.e - b.e);
+  const res = [];
+  let cluster = [], cEnd = -1;
+  const flush = () => {
+    const colEnd = [];
+    for (const it of cluster) {
+      let ci = colEnd.findIndex(end => it.s >= end);
+      if (ci === -1) { colEnd.push(it.e); ci = colEnd.length - 1; } else colEnd[ci] = it.e;
+      it.col = ci;
+    }
+    const n = Math.max(1, colEnd.length);
+    for (const it of cluster) it.cols = n;
+    res.push(...cluster);
+    cluster = []; cEnd = -1;
+  };
+  for (const it of items) {
+    if (cluster.length && it.s >= cEnd) flush();
+    cluster.push(it); cEnd = Math.max(cEnd, it.e);
+  }
+  if (cluster.length) flush();
+  return res;
+}
+
+/* ---------- 渲染 ---------- */
+const viewEl = document.getElementById("view");
+const titleEl = document.getElementById("title");
+/* 小窗口（窄于 620px）下用更紧凑的呈现方式 */
+const isCompact = () => window.innerWidth < 620;
+
+function render() {
+  applyTheme();
+  const prevScroll = document.querySelector(".scroller");
+  const keepTop = dirtyScroll ? null : (prevScroll ? prevScroll.scrollTop : null);
+  document.querySelectorAll("#views button").forEach(b => b.classList.toggle("on", b.dataset.view === state.view));
+  if (state.view === "day") renderDay();
+  else if (state.view === "week") (isCompact() ? renderAgenda() : renderWeek());
+  else renderMonth();
+  titleEl.innerHTML = titleHTML();
+  if (dirtyScroll) {
+    dirtyScroll = false;
+    scrollGridToStart();
+  } else if (keepTop != null) {
+    requestAnimationFrame(() => {
+      const sc = document.querySelector(".scroller");
+      if (sc) sc.scrollTop = keepTop;
+    });
+  }
+}
+
+/* 打开时滚到合适位置：优先露出今天的第一个事项，否则落在「现在」附近或早上 7 点
+   （WebKit 首帧布局可能还没完成，所以补两次） */
+function scrollGridToStart() {
+  const now = new Date();
+  let top = 7 * HOUR;
+  if (state.view === "day" && isToday(state.cursor)) {
+    const day = parseYMD(ymd(state.cursor));
+    const starts = occurrences(day, day).filter(o => !o.ev.allDay).map(o => toMin(o.ev.start));
+    const nowTop = (now.getHours() * 60 + now.getMinutes()) / 60 * HOUR;
+    top = Math.max(0, nowTop - HOUR);
+    if (starts.length) top = Math.min(top, Math.max(0, Math.min.apply(null, starts) / 60 * HOUR - HOUR / 2));
+  }
+  const apply = () => {
+    const sc = document.querySelector(".scroller");
+    if (sc) { sc.scrollTop = top; return; }
+    const agenda = document.querySelector(".agenda");
+    const todayRow = agenda && agenda.querySelector(".ag-day.today");
+    if (agenda && todayRow) agenda.scrollTop = Math.max(0, todayRow.offsetTop - 8);
+  };
+  requestAnimationFrame(apply);
+  setTimeout(apply, 60);
+  setTimeout(apply, 260);
+}
+
+function titleHTML() {
+  const c = state.cursor;
+  if (state.view === "day") {
+    const wd = WD[c.getDay()];
+    const diff = Math.round((parseYMD(ymd(c)) - parseYMD(ymd(new Date()))) / 86400000);
+    const rel = diff === 0 ? "今天" : diff === 1 ? "明天" : diff === -1 ? "昨天" : "";
+    const m = dayMeta(c);
+    return `${c.getFullYear()} 年 ${c.getMonth() + 1} 月 ${c.getDate()} 日<small>${wd}${rel ? " · " + rel : ""} · 农历${esc(m.lunar.text)}${m.off ? " · " + esc(m.off) : m.lunar.festival ? " · " + esc(m.lunar.festival) : ""}${m.work ? " · 调休上班" : ""}</small>`;
+  }
+  if (state.view === "week") {
+    const s = startOfWeek(c), e = addDays(s, 6);
+    const sameMonth = s.getMonth() === e.getMonth();
+    const range = sameMonth
+      ? `${s.getMonth() + 1} 月 ${s.getDate()} – ${e.getDate()} 日`
+      : `${s.getMonth() + 1} 月 ${s.getDate()} 日 – ${e.getMonth() + 1} 月 ${e.getDate()} 日`;
+    return `${s.getFullYear()} 年<small>${range} · 第 ${weekNumber(s)} 周</small>`;
+  }
+  return `${c.getFullYear()} 年 ${c.getMonth() + 1} 月`;
+}
+
+function evStyle(o, top, height) {
+  const c = RGB[o.ev.color].join(",");
+  const cols = o.cols || 1, col = o.col || 0;
+  const w = 100 / cols;
+  let s = `--c:${c};top:${top}px;height:${height}px;`;
+  if (cols > 1) s += `left:calc(${(col * w).toFixed(3)}% + 1px);width:calc(${w.toFixed(3)}% - 2px);right:auto;`;
+  return s;
+}
+
+/* 定时事项块的像素位置 */
+function evBox(ev) {
+  const s = toMin(ev.start);
+  const e = toMin(ev.end);
+  const dur = Math.max(15, e > s ? e - s : 30);
+  return { top: s / 60 * HOUR, h: Math.max(24, dur / 60 * HOUR - 2), dur };
+}
+
+function evHTML(o, compact) {
+  const ev = o.ev;
+  const rep = ev.repeat !== "none";
+  const tip = `${ev.title}${rep ? "（重复）" : ""}${ev.note ? "\n" + ev.note : ""}`;
+  const c = RGB[ev.color].join(",");
+  if (compact) {
+    return `<div class="chip${ev.done ? " done" : ""}" data-id="${ev.id}" data-date="${o.date}" style="--c:${c}" title="${esc(tip)}">` +
+      `${ev.allDay ? "" : `<span class="ct">${hhmm(ev.start)}</span>`}<span>${esc(ev.title)}</span></div>`;
+  }
+  const b = evBox(ev);
+  return `<div class="ev${ev.done ? " done" : ""}" data-id="${ev.id}" data-date="${o.date}" data-occurrence="${o.date}" style="${evStyle(o, b.top, b.h)}" title="${esc(tip)}">` +
+    `<div class="t">${rep ? "↻ " : ""}${esc(ev.title)}</div>` +
+    `<div class="tm">${hhmm(ev.start)}${ev.end ? " – " + hhmm(ev.end) : ""}</div></div>`;
+}
+
+/* ----- 日视图 ----- */
+function renderDay() {
+  const d = state.cursor, key = ymd(d);
+  const day = parseYMD(key);                      // 当天 00:00，避免时刻影响区间判断
+  const occ = occurrences(day, day);
+  const allday = occ.filter(o => o.ev.allDay);
+  const timed = layoutDay(occ.filter(o => !o.ev.allDay));
+  const now = new Date();
+  const nowTop = (now.getHours() * 60 + now.getMinutes()) / 60 * HOUR;
+  const meta = dayMeta(d);
+
+  let html = `<div class="week-head" style="grid-template-columns:var(--gutter) 1fr">
+      <div class="gutterhead"></div>
+      <div class="hc ${isToday(d) ? "today" : ""}${meta.off ? " off" : ""}${meta.work ? " work" : ""}" data-goto="${key}">
+        <div class="dw">${WD[d.getDay()]}</div><div class="dn">${d.getDate()}</div>
+        <div class="lunar-big">农历${esc(meta.lunar.text)}${meta.off ? ' · <b>' + esc(meta.off) + ' 休</b>' : meta.lunar.festival ? ' · <b>' + esc(meta.lunar.festival) + '</b>' : ""}${meta.work ? ' · <b>调休上班</b>' : ""}</div>
+      </div>
+    </div>`;
+
+  html += `<div class="allday" style="grid-template-columns:var(--gutter) 1fr">
+      <div class="lbl">全天</div>
+      <div class="ac" data-date="${key}" data-allday="1">${allday.map(o => chipAllDay(o)).join("")}</div>
+    </div>`;
+
+  html += `<div class="scroller"><div class="grid" style="grid-template-columns:var(--gutter) 1fr">
+      <div class="gutter">${Array.from({ length: 24 }, (_, h) => `<div><span>${pad(h)}:00</span></div>`).join("")}</div>
+      <div class="cols" style="grid-template-columns:1fr">
+        <div class="col ${isToday(d) ? "today" : ""}" data-col="${key}">
+          ${Array.from({ length: 24 }, (_, h) => `<div class="slot" data-date="${key}" data-minutes="${h * 60}"></div>`).join("")}
+          ${timed.map(o => evHTML(o)).join("")}
+          ${isToday(d) ? `<div class="nowline" style="top:${nowTop}px"></div>` : ""}
+        </div>
+      </div>
+    </div></div>`;
+
+  if (occ.length === 0 && !state.query) html += emptyHTML(d);
+  viewEl.innerHTML = html;
+  if (occ.length === 0 && !state.query) viewEl.querySelector(".empty").onclick = e => { newEvent({ date: key }); };
+}
+
+function chipAllDay(o) {
+  const ev = o.ev;
+  const time = ev.allDay ? "" : `<span class="ct">${hhmm(ev.start)}</span>`;
+  return `<div class="chip${ev.done ? " done" : ""}" data-id="${ev.id}" data-date="${o.date}" style="--c:${RGB[ev.color].join(",")}" title="${esc(ev.title)}">${time}${ev.repeat !== "none" ? "↻ " : ""}<span>${esc(ev.title)}</span></div>`;
+}
+
+/* ----- 周视图 ----- */
+function renderWeek() {
+  const s = startOfWeek(state.cursor);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(s, i));
+  const e = days[6];
+  const occ = occurrences(s, e);
+  const byDay = {};
+  days.forEach(d => byDay[ymd(d)] = []);
+  occ.forEach(o => { if (byDay[o.date]) byDay[o.date].push(o); });
+
+  let head = `<div class="week-head" style="grid-template-columns:var(--gutter) repeat(7,1fr)">
+      <div class="gutterhead"></div>` +
+    days.map(d => {
+      const m = dayMeta(d);
+      const lab = m.off ? m.off : (m.work ? "班" : m.lunar.short);
+      return `<div class="hc ${isToday(d) ? "today" : ""}${m.off ? " off" : ""}${m.work ? " work" : ""}" data-goto="${ymd(d)}">
+        <div class="dw">${WD1[(d.getDay() + 6) % 7]}</div><div class="dn">${d.getDate()}</div>
+        <div class="lm${m.off || m.lunar.festival ? " fest" : ""}">${esc(lab)}</div></div>`;
+    }).join("") + `</div>`;
+
+  let allday = `<div class="allday" style="grid-template-columns:var(--gutter) repeat(7,1fr)">
+      <div class="lbl">全天</div>` +
+    days.map(d => {
+      const key = ymd(d);
+      const list = byDay[key].filter(o => o.ev.allDay);
+      return `<div class="ac" data-date="${key}" data-allday="1">${list.map(chipAllDay).join("")}</div>`;
+    }).join("") + `</div>`;
+
+  const nowTop = (new Date().getHours() * 60 + new Date().getMinutes()) / 60 * HOUR;
+  let cols = `<div class="cols" style="grid-template-columns:repeat(7,1fr)">` +
+    days.map(d => {
+      const key = ymd(d);
+      const timed = layoutDay(byDay[key].filter(o => !o.ev.allDay));
+      return `<div class="col ${isToday(d) ? "today" : (d.getDay() === 0 || d.getDay() === 6 ? "weekend" : "")}" data-col="${key}">
+        ${Array.from({ length: 24 }, (_, h) => `<div class="slot" data-date="${key}" data-minutes="${h * 60}"></div>`).join("")}
+        ${timed.map(o => evHTML(o)).join("")}
+        ${isToday(d) ? `<div class="nowline" style="top:${nowTop}px"></div>` : ""}
+      </div>`;
+    }).join("") + `</div>`;
+
+  viewEl.innerHTML = head + allday +
+    `<div class="scroller"><div class="grid" style="grid-template-columns:var(--gutter) 1fr">
+      <div class="gutter">${Array.from({ length: 24 }, (_, h) => `<div><span>${pad(h)}:00</span></div>`).join("")}</div>
+      ${cols}</div></div>`;
+}
+
+/* ----- 周视图（小窗口）：按天议程 ----- */
+function renderAgenda() {
+  const s = startOfWeek(state.cursor);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(s, i));
+  const occ = occurrences(days[0], days[6]);
+  const byDay = {};
+  days.forEach(d => byDay[ymd(d)] = []);
+  occ.forEach(o => { if (byDay[o.date]) byDay[o.date].push(o); });
+
+  let html = `<div class="agenda">`;
+  for (const d of days) {
+    const key = ymd(d);
+    const m = dayMeta(d);
+    const list = byDay[key].sort((a, b) => (a.ev.allDay === b.ev.allDay ? toMin(a.ev.start) - toMin(b.ev.start) : (a.ev.allDay ? -1 : 1)));
+    html += `<div class="ag-day ${isToday(d) ? "today" : ""}" data-date="${key}">
+      <div class="ag-head" data-goto="${key}">
+        <span class="ag-dw">${WD1[(d.getDay() + 6) % 7]}</span>
+        <span class="ag-dn">${d.getDate()}</span>
+        ${m.off ? '<span class="badge off">休</span>' : m.work ? '<span class="badge work">班</span>' : ""}
+        <span class="ag-lunar${m.off || m.lunar.festival ? " fest" : ""}">${esc(m.off || m.lunar.festival || m.lunar.short)}</span>
+        <span class="ag-count">${list.length ? list.length + " 项" : ""}</span>
+      </div>
+      <div class="ag-list">`;
+    if (!list.length) html += `<div class="ag-empty">—</div>`;
+    for (const o of list) {
+      const ev = o.ev;
+      const time = ev.allDay ? "全天" : hhmm(ev.start);
+      html += `<div class="ag-item${ev.done ? " done" : ""}" data-id="${ev.id}" data-date="${o.date}"
+          style="--c:${RGB[ev.color].join(",")}" title="${esc(ev.title + (ev.note ? "\n" + ev.note : ""))}">
+          <span class="ag-time">${time}</span>
+          <span class="ag-title">${ev.repeat !== "none" ? "↻ " : ""}${esc(ev.title)}</span>
+        </div>`;
+    }
+    html += `</div></div>`;
+  }
+  html += `</div>`;
+  viewEl.innerHTML = html;
+}
+
+/* ----- 月视图 ----- */
+function renderMonth() {
+  const first = new Date(state.cursor.getFullYear(), state.cursor.getMonth(), 1);
+  const gridStart = startOfWeek(first);
+  const gridEnd = addDays(gridStart, 41);
+  const occ = occurrences(gridStart, gridEnd);
+  const byDay = {};
+  occ.forEach(o => (byDay[o.date] = byDay[o.date] || []).push(o));
+
+  let head = `<div class="week-head" style="grid-template-columns:repeat(7,1fr)">` +
+    WD1.map(w => `<div class="hc" style="cursor:default"><div class="dw" style="font-size:12.5px;font-weight:600">${w}</div></div>`).join("") + `</div>`;
+
+  let rows = "";
+  for (let r = 0; r < 6; r++) {
+    rows += `<div class="mrow">`;
+    for (let c = 0; c < 7; c++) {
+      const d = addDays(gridStart, r * 7 + c);
+      const key = ymd(d);
+      const list = (byDay[key] || []).sort((a, b) => {
+        if (a.ev.allDay !== b.ev.allDay) return a.ev.allDay ? -1 : 1;
+        return toMin(a.ev.start) - toMin(b.ev.start);
+      });
+      const compact = isCompact();
+      const show = list.slice(0, compact ? 8 : 3);
+      const meta = dayMeta(d);
+      const cls = ["cell"];
+      if (d.getMonth() !== state.cursor.getMonth()) cls.push("other");
+      if ((d.getDay() === 0 || d.getDay() === 6) && !meta.work) cls.push("weekend");
+      if (meta.off) cls.push("off");
+      if (meta.work) cls.push("work");
+      if (isToday(d)) cls.push("today");
+      const badge = meta.off ? '<span class="badge off">休</span>'
+        : meta.work ? '<span class="badge work">班</span>' : "";
+      rows += `<div class="${cls.join(" ")}" data-date="${key}">
+          <div class="ctop">
+            <div class="num" data-goto="${key}">${d.getDate()}</div>
+            ${badge}
+            <button class="add" data-add="${key}" title="新建事项">+</button>
+          </div>
+          <div class="lunar${meta.off || meta.lunar.festival ? " fest" : ""}" data-goto="${key}">${esc(meta.label)}</div>
+          ${compact
+            ? `<div class="dots" data-goto="${key}">${show.map(o => `<i style="--c:${RGB[o.ev.color].join(",")}"></i>`).join("")}${list.length > show.length ? `<u>+${list.length - show.length}</u>` : ""}</div>`
+            : show.map(o => chipAllDay(o)).join("")}
+          ${!compact && list.length > 3 ? `<div class="more" data-goto="${key}">还有 ${list.length - 3} 项…</div>` : ""}
+        </div>`;
+    }
+    rows += `</div>`;
+  }
+  viewEl.innerHTML = head + `<div class="month">${rows}</div>`;
+}
+
+function emptyHTML(d) {
+  return `<div class="empty"><div class="box">
+      <h3>${d.getMonth() + 1} 月 ${d.getDate()} 日 暂无事项</h3>
+      <p>点击任意时间格即可添加，按 <kbd>N</kbd> 也可以新建。</p>
+      <button class="btn primary" style="margin:0 auto">添加第一件事项</button>
+    </div></div>`;
+}
+
+/* ---------- 弹窗 ---------- */
+const editor = document.getElementById("editor");
+const help = document.getElementById("help");
+const fColors = document.getElementById("fColors");
+
+COLORS.forEach(c => {
+  const b = document.createElement("div");
+  b.className = "sw"; b.dataset.color = c; b.title = CNAME[c];
+  b.style.setProperty("--c", RGB[c].join(","));
+  b.onclick = () => { if (editing) editing.data.color = c; paintSwatches(); };
+  fColors.appendChild(b);
+});
+function paintSwatches() {
+  [...fColors.children].forEach(el => el.classList.toggle("on", editing && el.dataset.color === editing.data.color));
+}
+
+function openEditor(cfg) {
+  editing = cfg;
+  const d = cfg.data;
+  document.getElementById("edTitle").textContent = cfg.mode === "new" ? "新建事项" : "编辑事项";
+  document.getElementById("fTitle").value = d.title || "";
+  document.getElementById("fDate").value = d.date;
+  updateDateInfo();
+  document.getElementById("fAllDay").checked = !!d.allDay;
+  document.getElementById("fDone").checked = !!d.done;
+  document.getElementById("fStart").value = d.start || "09:00";
+  document.getElementById("fEnd").value = d.end || "10:00";
+  document.getElementById("fRepeat").value = d.repeat || "none";
+  document.getElementById("fUntil").value = d.until || "";
+  document.getElementById("fNote").value = d.note || "";
+  document.getElementById("edDelete").style.display = cfg.mode === "edit" ? "" : "none";
+  const tip = document.getElementById("seriesTip");
+  if (cfg.seriesDate && d.repeat !== "none") {
+    tip.style.display = ""; tip.textContent = "这是重复事项（原定于 " + d.date + "）。修改将应用于整个系列。";
+    document.getElementById("edDelete").textContent = "删除整个系列";
+  } else {
+    tip.style.display = "none";
+    document.getElementById("edDelete").textContent = "删除";
+  }
+  syncAllDay();
+  paintSwatches();
+  editor.classList.add("open");
+  setTimeout(() => document.getElementById("fTitle").focus(), 60);
+}
+/* 编辑弹窗里显示所选日期的农历 / 节假日 */
+function updateDateInfo() {
+  const el = document.getElementById("fDateInfo");
+  if (!el) return;
+  const v = document.getElementById("fDate").value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { el.textContent = ""; return; }
+  const dt = parseYMD(v), m = dayMeta(dt);
+  el.textContent = WD[dt.getDay()] + " · 农历" + m.lunar.text +
+    (m.off ? " · " + m.off + "（放假）" : m.lunar.festival ? " · " + m.lunar.festival : "") +
+    (m.work ? " · 调休上班" : "");
+}
+
+function syncAllDay() {
+  const all = document.getElementById("fAllDay").checked;
+  document.getElementById("timeRow").style.display = all ? "none" : "";
+}
+function closeEditor() { editor.classList.remove("open"); editing = null; }
+
+function newEvent(prefill) {
+  const p = prefill || {};
+  const date = p.date || ymd(state.cursor);
+  const allDay = !!p.allDay;
+  let start = p.start, end = p.end;
+  if (!allDay && !start) {
+    const now = new Date();
+    let h = date === ymd(now) ? now.getHours() : 9;
+    let m = date === ymd(now) ? Math.ceil(now.getMinutes() / 15) * 15 : 0;
+    if (m === 60) { m = 0; h = (h + 1) % 24; }
+    start = `${pad(h)}:${pad(m)}`;
+    end = `${pad(Math.min(23, h + 1))}:${pad(m)}`;
+  }
+  openEditor({
+    mode: "new",
+    data: {
+      id: null, title: "", date,
+      allDay, start: allDay ? "" : start, end: allDay ? "" : end,
+      color: p.color || pickColor(), note: "", done: false,
+      repeat: "none", until: "", skip: []
+    }
+  });
+}
+function pickColor() {
+  // 依据当天已有事项挑一个不重复的颜色，让配色自然错开
+  const used = state.events.filter(e => e.date === ymd(state.cursor)).map(e => e.color);
+  return COLORS.find(c => !used.includes(c)) || COLORS[state.events.length % COLORS.length];
+}
+
+function saveEditor() {
+  if (!editing) return;
+  const titleEl2 = document.getElementById("fTitle");
+  let title = titleEl2.value.trim();
+  if (!title) { title = "未命名事项"; }
+  const allDay = document.getElementById("fAllDay").checked;
+  const start = allDay ? "" : document.getElementById("fStart").value;
+  let end = allDay ? "" : document.getElementById("fEnd").value;
+  if (!allDay && start && end && toMin(end) <= toMin(start)) end = fromMin(Math.min(23 * 60 + 45, toMin(start) + 60));
+
+  const patch = {
+    title,
+    date: document.getElementById("fDate").value || ymd(state.cursor),
+    allDay, start, end,
+    done: document.getElementById("fDone").checked,
+    repeat: document.getElementById("fRepeat").value,
+    until: document.getElementById("fRepeat").value === "none" ? "" : document.getElementById("fUntil").value,
+    color: editing.data.color,
+    note: document.getElementById("fNote").value.trim()
+  };
+
+  if (editing.mode === "new") {
+    state.events.push(normalize(Object.assign({ id: uid(), skip: [] }, patch)));
+    toast("已添加：" + title);
+  } else {
+    const ev = getEvent(editing.data.id);
+    if (ev) {
+      Object.assign(ev, patch);
+      if (ev.repeat !== "none" && editing.seriesDate && ev.date !== editing.seriesDate) {
+        // 用户修改了重复系列的某一次日期：把整个系列起点移到新日期
+        ev.date = patch.date;
+      }
+      toast("已保存");
+    }
+  }
+  save(); closeEditor(); render();
+}
+
+/* ---------- 增删改查交互 ---------- */
+function deleteEvent() {
+  if (!editing || editing.mode !== "edit") return;
+  const ev = getEvent(editing.data.id);
+  if (!ev) return closeEditor();
+  if (editing.seriesDate && ev.repeat !== "none") {
+    if (editing.seriesDate !== ev.date) {
+      // 删除单次：加入例外日期
+      ev.skip = Array.from(new Set(ev.skip.concat([editing.seriesDate])));
+      toast("已删除这一次（系列保留）");
+    } else {
+      if (!confirm("删除整个重复系列？")) return;
+      state.events = state.events.filter(e => e.id !== ev.id);
+      toast("已删除系列");
+    }
+  } else {
+    state.events = state.events.filter(e => e.id !== ev.id);
+    toast("已删除");
+  }
+  save(); closeEditor(); render();
+}
+
+viewEl.addEventListener("click", e => {
+  const goto = e.target.closest("[data-goto]");
+  const add = e.target.closest("[data-add]");
+  const chip = e.target.closest("[data-id]");
+  if (add) { e.stopPropagation(); newEvent({ date: add.dataset.add, allDay: true }); return; }
+  if (goto) {   // 点日期一律进入当天视图（月视图的日期数字、周视图/议程的日期标题）
+    state.cursor = parseYMD(goto.dataset.goto);
+    state.view = "day";
+    dirtyScroll = true; save(); render();
+    return;
+  }
+  if (chip) {
+    const ev = getEvent(chip.dataset.id);
+    if (!ev) return;
+    openEditor({ mode: "edit", data: Object.assign({}, ev, { skip: ev.skip }), seriesDate: chip.dataset.date || null });
+    return;
+  }
+  const slot = e.target.closest(".slot");
+  if (slot) {
+    const base = +slot.dataset.minutes;
+    newEvent({ date: slot.dataset.date, allDay: false, start: fromMin(base), end: fromMin(Math.min(23 * 60 + 45, base + 60)) });
+    return;
+  }
+  const ac = e.target.closest("[data-allday]");
+  if (ac) { newEvent({ date: ac.dataset.date, allDay: true }); return; }
+  const cell = e.target.closest(".cell");
+  if (cell) { newEvent({ date: cell.dataset.date, allDay: true }); return; }
+});
+
+/* ---------- 拖拽调整时间 / 日期 ---------- */
+let drag = null;
+viewEl.addEventListener("pointerdown", e => {
+  const el = e.target.closest(".ev, .chip");
+  if (!el || e.button !== 0) return;
+  const id = el.dataset.id, ev = getEvent(id);
+  if (!ev) return;
+  if (ev.repeat !== "none" && el.dataset.occurrence) return;   // 重复事项不支持拖动
+  drag = { id, el, x: e.clientX, y: e.clientY, moved: false, ev };
+  el.setPointerCapture?.(e.pointerId);
+});
+window.addEventListener("pointermove", e => {
+  if (!drag) return;
+  if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 5) return;
+  if (!drag.moved) { drag.moved = true; drag.el.classList.add("dragging"); document.body.style.cursor = "grabbing"; }
+  drag.el.style.transform = `translate(${e.clientX - drag.x}px, ${e.clientY - drag.y}px)`;
+  highlightTarget(e.clientX, e.clientY);
+});
+window.addEventListener("pointerup", e => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  d.el.classList.remove("dragging");
+  d.el.style.transform = "";
+  document.body.style.cursor = "";
+  document.querySelectorAll(".cell.drop").forEach(c => c.classList.remove("drop"));
+  if (!d.moved) return;                       // 视为点击，交给 click 处理
+  draggedJustNow = true; setTimeout(() => draggedJustNow = false, 60);
+  const target = dropTarget(e.clientX, e.clientY);
+  if (!target) return;
+  applyDrop(d.ev, target);
+});
+let draggedJustNow = false;
+viewEl.addEventListener("click", e => { if (draggedJustNow) { e.stopPropagation(); e.preventDefault(); } }, true);
+
+function dropTarget(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (!el) return null;
+  const cell = el.closest(".cell");
+  if (cell) return { date: cell.dataset.date };
+  const ac = el.closest("[data-allday]");
+  if (ac) return { date: ac.dataset.date, allDay: true };
+  const slot = el.closest(".slot");
+  if (slot) return { date: slot.dataset.date, minutes: +slot.dataset.minutes };
+  return null;
+}
+function highlightTarget(x, y) {
+  document.querySelectorAll(".cell.drop").forEach(c => c.classList.remove("drop"));
+  const t = dropTarget(x, y);
+  if (t && t.minutes == null) {
+    const cell = document.querySelector(`.cell[data-date="${t.date}"]`);
+    if (cell) cell.classList.add("drop");
+  }
+}
+function applyDrop(ev, t) {
+  const before = JSON.stringify([ev.date, ev.start, ev.end, ev.allDay]);
+  if (t.minutes != null) {
+    const dur = Math.max(15, (toMin(ev.end) || toMin(ev.start) + 60) - toMin(ev.start));
+    ev.date = t.date;
+    ev.start = fromMin(t.minutes);
+    ev.end = fromMin(Math.min(23 * 60 + 45, t.minutes + dur));
+    ev.allDay = false;
+  } else {
+    ev.date = t.date;
+    if (t.allDay) { ev.allDay = true; ev.start = ""; ev.end = ""; }
+  }
+  if (JSON.stringify([ev.date, ev.start, ev.end, ev.allDay]) !== before) {
+    save(); render();
+    toast(ev.allDay ? `已移到 ${ev.date}` : `已移到 ${ev.date} ${ev.start}`);
+  }
+}
+
+/* ---------- 顶栏交互 ---------- */
+document.getElementById("today").onclick = () => { state.cursor = new Date(); dirtyScroll = true; render(); };
+document.getElementById("prev").onclick = () => shift(-1);
+document.getElementById("next").onclick = () => shift(1);
+function shift(dir) {
+  const c = state.cursor;
+  if (state.view === "day") state.cursor = addDays(c, dir);
+  else if (state.view === "week") state.cursor = addDays(c, 7 * dir);
+  else state.cursor = new Date(c.getFullYear(), c.getMonth() + dir, 1);
+  dirtyScroll = true; render();
+}
+document.getElementById("views").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.view = b.dataset.view; dirtyScroll = true; save(); render();
+};
+document.getElementById("new").onclick = () => newEvent({});
+document.getElementById("theme").onclick = () => {
+  state.theme = state.theme === "dark" ? "light" : state.theme === "light" ? "auto" : "dark";
+  applyTheme(); save();
+  toast("主题：" + ({ auto: "跟随系统", light: "浅色", dark: "深色" })[state.theme]);
+};
+const dropdown = document.getElementById("dropdown");
+document.getElementById("more").onclick = e => { e.stopPropagation(); dropdown.classList.toggle("open"); };
+document.addEventListener("click", () => dropdown.classList.remove("open"));
+dropdown.onclick = e => e.stopPropagation();
+
+const search = document.getElementById("search");
+search.oninput = () => { state.query = search.value; render(); };
+const searchToggle = document.getElementById("searchToggle");
+searchToggle.onclick = () => {
+  const on = document.body.classList.toggle("searching");
+  if (on) search.focus(); else if (state.query) { search.value = ""; state.query = ""; render(); }
+};
+
+/* 导出 / 导入 / 示例 / 清空 */
+document.getElementById("mExport").onclick = () => {
+  const blob = new Blob([JSON.stringify({ app: "local-calendar", version: 1, exportedAt: new Date().toISOString(), events: state.events }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `calendar-${ymd(new Date())}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast("已导出备份");
+};
+document.getElementById("mImport").onclick = () => document.getElementById("fileInput").click();
+document.getElementById("fileInput").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      const list = Array.isArray(d) ? d : d.events;
+      if (!Array.isArray(list)) throw new Error("格式不正确");
+      const mode = state.events.length ? confirm("确定用备份替换现有 " + state.events.length + " 条事项？\n（点「取消」则追加导入）") : true;
+      const incoming = list.map(normalize);
+      state.events = mode ? incoming : state.events.concat(incoming);
+      save(); render(); toast("已导入 " + incoming.length + " 条事项");
+    } catch (err) { alert("导入失败：" + err.message); }
+  };
+  r.readAsText(f);
+  e.target.value = "";
+};
+document.getElementById("mSample").onclick = () => {
+  const t = new Date(), k = ymd(t);
+  const demo = [
+    { title: "晨间计划 · 列出今日 3 件要事", date: k, start: "08:30", end: "09:00", color: "teal" },
+    { title: "项目例会", date: k, start: "10:00", end: "11:00", color: "indigo", note: "线上会议" },
+    { title: "专注工作 90 分钟", date: k, start: "14:00", end: "15:30", color: "blue", repeat: "daily" },
+    { title: "健身 / 散步", date: ymd(addDays(t, 1)), start: "19:00", end: "20:00", color: "green", repeat: "weekly" },
+    { title: "月度复盘", date: ymd(new Date(t.getFullYear(), t.getMonth(), 1)), allDay: true, color: "amber", repeat: "monthly" }
+  ];
+  state.events = state.events.concat(demo.map(normalize));
+  save(); render(); toast("已载入 5 条示例事项");
+};
+document.getElementById("mClear").onclick = () => {
+  if (!state.events.length) return toast("当前没有事项");
+  if (!confirm("确定清空全部 " + state.events.length + " 条事项？此操作不可撤销。")) return;
+  state.events = []; save(); render(); toast("已清空");
+};
+document.getElementById("mHelp").onclick = () => help.classList.add("open");
+
+/* 弹窗按钮 */
+document.getElementById("edClose").onclick = closeEditor;
+document.getElementById("edCancel").onclick = closeEditor;
+document.getElementById("edSave").onclick = saveEditor;
+document.getElementById("edDelete").onclick = deleteEvent;
+document.getElementById("fAllDay").onchange = syncAllDay;
+document.getElementById("fDate").onchange = updateDateInfo;
+editor.addEventListener("mousedown", e => { if (e.target === editor) closeEditor(); });
+help.addEventListener("click", e => { if (e.target === help || e.target.closest("[data-close-help]")) help.classList.remove("open"); });
+document.getElementById("fTitle").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveEditor(); } });
+
+/* ---------- 快捷键 ---------- */
+document.addEventListener("keydown", e => {
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if (e.key === "Escape") {
+    if (editor.classList.contains("open")) return closeEditor();
+    if (help.classList.contains("open")) return help.classList.remove("open");
+    if (document.body.classList.contains("searching")) { document.body.classList.remove("searching"); }
+    if (document.activeElement === search) { search.value = ""; state.query = ""; search.blur(); render(); }
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+    if (editor.classList.contains("open")) { e.preventDefault(); saveEditor(); }
+    return;
+  }
+  if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === "n") { e.preventDefault(); newEvent({}); }
+  else if (k === "d") { state.view = "day"; dirtyScroll = true; save(); render(); }
+  else if (k === "w") { state.view = "week"; dirtyScroll = true; save(); render(); }
+  else if (k === "m") { state.view = "month"; dirtyScroll = true; save(); render(); }
+  else if (k === "t") { state.cursor = new Date(); dirtyScroll = true; render(); }
+  else if (k === "arrowleft") { e.preventDefault(); shift(-1); }
+  else if (k === "arrowright") { e.preventDefault(); shift(1); }
+  else if (k === "/") { e.preventDefault(); search.focus(); }
+});
+
+/* ---------- Toast ---------- */
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2000);
+}
+
+/* ---------- 启动 ---------- */
+loadLocal();
+applyTheme();
+updateHolidayNote();
+if (!state.view) state.view = "month";
+try {                                    // 支持 ?view=day&date=2026-10-11
+  const q = new URLSearchParams(location.search);
+  if (["day", "week", "month"].includes(q.get("view"))) state.view = q.get("view");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(q.get("date") || "")) state.cursor = parseYMD(q.get("date"));
+} catch (e) { /* 忽略 */ }
+render();                 // 先用浏览器里的镜像秒开（无白屏）
+syncFromServer();         // 再与本地数据文件对齐
+loadHolidays();           // 节假日数据（有 holidays.json 则以其为准）
+window.addEventListener("resize", () => render());
+window.addEventListener("beforeunload", () => { if (saveTimer) pushToServer(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden && saveTimer) pushToServer(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef1ff"/>
+    </linearGradient>
+    <clipPath id="cardclip">
+      <rect x="24" y="30" width="80" height="74" rx="13"/>
+    </clipPath>
+  </defs>
+
+  <rect x="6" y="6" width="116" height="116" rx="28" fill="url(#bg)"/>
+
+  <!-- 顶部挂环 -->
+  <rect x="42" y="16" width="6" height="18" rx="3" fill="#ffffff" opacity=".95"/>
+  <rect x="80" y="16" width="6" height="18" rx="3" fill="#ffffff" opacity=".95"/>
+
+  <!-- 卡片 -->
+  <rect x="24" y="30" width="80" height="74" rx="13" fill="url(#card)"/>
+  <g clip-path="url(#cardclip)">
+    <rect x="24" y="30" width="80" height="20" fill="#6366f1" opacity=".22"/>
+    <!-- 日期格 -->
+    <g fill="#6366f1" opacity=".30">
+      <circle cx="42" cy="66" r="4.2"/><circle cx="64" cy="66" r="4.2"/><circle cx="86" cy="66" r="4.2"/>
+      <circle cx="42" cy="82" r="4.2"/><circle cx="86" cy="82" r="4.2"/>
+    </g>
+    <!-- 今天 -->
+    <circle cx="64" cy="82" r="9" fill="#6366f1"/>
+    <path d="M60 82.2l2.9 3 4.6-5.4" fill="none" stroke="#ffffff" stroke-width="2.4"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
