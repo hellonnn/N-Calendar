@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-本地日历的后台服务（同一份代码同时供「小窗口应用」和「浏览器版」使用）
-
-  · 只监听 127.0.0.1，外部网络无法访问
-  · 提供本目录内的静态页面，禁用缓存
-  · 事项保存在本地 JSON 文件里（默认 ~/.local/share/local-calendar/calendar.json）
-
-"""
 import argparse
 import functools
 import http.server
@@ -22,13 +14,14 @@ import time
 MAX_BODY = 8 * 1024 * 1024
 MAX_EVENTS = 20000
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-KNOWN_FIELDS = ("id", "title", "date", "start", "end", "allDay", "color", "note", "done", "repeat", "until", "skip")
+KNOWN_FIELDS = ("id", "title", "date", "start", "end", "allDay", "color", "note", "done", "repeat", "until", "skip",
+                "tags", "priority", "due", "skipRest")
 
 
 # ----------------------------------------------------------------- 数据文件
 def default_data_file():
     base = os.environ.get("XDG_DATA_HOME") or os.path.join(os.path.expanduser("~"), ".local", "share")
-    return os.path.join(base, "local-calendar", "calendar.json")
+    return os.path.join(base, "local-calendar", "calendar-1.0.json")
 
 
 def sanitize_event(raw):
@@ -55,6 +48,27 @@ def sanitize_event(raw):
     ev["id"] = str(ev.get("id") or "")[:64]
     skip = ev.get("skip")
     ev["skip"] = [s for s in skip if isinstance(s, str) and DATE_RE.match(s)][:400] if isinstance(skip, list) else []
+    # 标签：去空白、去重、限制数量与长度
+    tags = ev.get("tags")
+    if isinstance(tags, list):
+        seen, clean = set(), []
+        for t in tags:
+            t = str(t).strip()[:24]
+            if t and t not in seen:
+                seen.add(t); clean.append(t)
+        ev["tags"] = clean[:8]
+    else:
+        ev["tags"] = []
+    # 优先级 0=无 1=低 2=中 3=高
+    try:
+        ev["priority"] = max(0, min(3, int(ev.get("priority") or 0)))
+    except (TypeError, ValueError):
+        ev["priority"] = 0
+    # 截止日（可覆盖事项日期）
+    due = ev.get("due")
+    ev["due"] = due if isinstance(due, str) and DATE_RE.match(due) else ""
+    # 重复时是否跳过周末与法定假日
+    ev["skipRest"] = bool(ev.get("skipRest"))
     return ev
 
 
@@ -102,6 +116,88 @@ def write_data(path, events, updated_at=None):
             pass
     os.replace(tmp, path)
     return doc
+
+
+# ----------------------------------------------------------------- 版本历史（自动备份）
+BACKUP_DIRNAME = "backups"
+BACKUP_INTERVAL = 60        # 两次自动备份之间至少间隔的秒数
+BACKUP_KEEP = 40            # 最多保留的备份份数
+BACKUP_RE = re.compile(r"^calendar-\d{8}-\d{6}(?:-\d+)?\.json$")
+
+
+def backup_dir(path):
+    return os.path.join(os.path.dirname(os.path.abspath(path)), BACKUP_DIRNAME)
+
+
+def list_backups(path):
+    """按时间倒序列出备份：名称、时间戳、条目数、大小"""
+    folder = backup_dir(path)
+    out = []
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return out
+    for name in names:
+        if not BACKUP_RE.match(name):
+            continue
+        full = os.path.join(folder, name)
+        try:
+            st = os.stat(full)
+            with open(full, "r", encoding="utf-8") as f:
+                doc = json.load(f)
+            count = len(doc.get("events") or [])
+        except Exception:
+            continue
+        out.append({"name": name, "mtime": int(st.st_mtime * 1000), "size": st.st_size, "count": count})
+    out.sort(key=lambda x: x["mtime"], reverse=True)
+    return out
+
+
+def prune_backups(path, keep=BACKUP_KEEP):
+    for old in list_backups(path)[keep:]:
+        try:
+            os.remove(os.path.join(backup_dir(path), old["name"]))
+        except OSError:
+            pass
+
+
+def make_backup(path, force=False):
+    """把当前数据文件复制成一份带时间戳的快照（受最小间隔限制）"""
+    if not os.path.exists(path):
+        return None
+    folder = backup_dir(path)
+    os.makedirs(folder, exist_ok=True)
+    if not force:
+        existing = list_backups(path)
+        if existing and (time.time() * 1000 - existing[0]["mtime"]) < BACKUP_INTERVAL * 1000:
+            return None                                  # 间隔太短，跳过
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    name = "calendar-%s.json" % stamp
+    seq = 1
+    while os.path.exists(os.path.join(folder, name)):
+        name = "calendar-%s-%d.json" % (stamp, seq)
+        seq += 1
+    try:
+        with open(path, "r", encoding="utf-8") as src, open(os.path.join(folder, name), "w", encoding="utf-8") as dst:
+            dst.write(src.read())
+    except OSError:
+        return None
+    prune_backups(path)
+    return name
+
+
+def restore_backup(path, name):
+    """从备份恢复（会先给当前状态再存一份，避免恢复本身不可逆）"""
+    if not BACKUP_RE.match(name or ""):
+        raise ValueError("备份名称不合法")
+    full = os.path.join(backup_dir(path), name)
+    if not os.path.isfile(full):
+        raise FileNotFoundError(name)
+    make_backup(path, force=True)          # 恢复前先保存当前状态
+    with open(full, "r", encoding="utf-8") as f:
+        doc = json.load(f)
+    write_data(path, doc.get("events") or [], int(time.time() * 1000))
+    return read_data(path)
 
 
 # ----------------------------------------------------------------- HTTP 处理
@@ -153,6 +249,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             doc["dataFile"] = self.DATA_FILE
             self._json(doc)
             return
+        if route == "/api/backups":
+            self._json({"backups": list_backups(self.DATA_FILE), "keep": BACKUP_KEEP, "interval": BACKUP_INTERVAL})
+            return
         if route == "/api/info":
             self._json({"dataFile": self.DATA_FILE, "port": self.PORT, "app": "local-calendar"})
             return
@@ -160,6 +259,28 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         route = self.path.split("?")[0]
+        if route == "/api/backup-now":
+            if not self._same_origin_ok():
+                self._json({"ok": False, "error": "来源不允许"}, 403); return
+            name = make_backup(self.DATA_FILE, force=True)
+            self._json({"ok": bool(name), "name": name, "backups": list_backups(self.DATA_FILE)})
+            return
+        if route == "/api/restore":
+            if not self._same_origin_ok():
+                self._json({"ok": False, "error": "来源不允许"}, 403); return
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                payload = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+            except Exception as e:
+                self._json({"ok": False, "error": "请求解析失败：%s" % e}, 400); return
+            try:
+                with Handler.write_lock:
+                    doc = restore_backup(self.DATA_FILE, (payload or {}).get("name", ""))
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)}, 400); return
+            doc["dataFile"] = self.DATA_FILE
+            self._json({"ok": True, "doc": doc, "backups": list_backups(self.DATA_FILE)})
+            return
         if route != "/api/save":
             self._json({"ok": False, "error": "未知接口"}, 404)
             return
@@ -185,6 +306,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         clean = [e for e in (sanitize_event(x) for x in events[:MAX_EVENTS]) if e]
         try:
             with Handler.write_lock:
+                make_backup(self.DATA_FILE)               # 覆盖前留一份快照（自动限频）
                 doc = write_data(self.DATA_FILE, clean, payload.get("updatedAt") if isinstance(payload, dict) else None)
         except Exception as e:
             self._json({"ok": False, "error": "写入失败：%s" % e}, 500)

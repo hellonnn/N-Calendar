@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-#  本地日历 · 一键启动器（Ubuntu / 任何带 Python3 的 Linux）
+#  本地日历 1.0 · 一键启动器（Ubuntu / 任何带 Python3 的 Linux）
 #
 #  用法：
 #    ./calendar.sh            启动服务并打开日历
@@ -17,7 +17,7 @@ HOST="127.0.0.1"
 PORTFILE="$DIR/.port"
 PIDFILE="$DIR/.server.pid"
 LOGFILE="$DIR/.server.log"
-DEFAULT_PORT=8765
+DEFAULT_PORT=8766
 
 say()  { printf '%s\n' "$*"; }
 die()  { printf '错误：%s\n' "$*" >&2; exit 1; }
@@ -182,8 +182,8 @@ PORT="$(start_server "${WANT_PORT:-$(current_port)}")" || {
 }
 
 URL="http://$HOST:$PORT/"
-say "本地日历： $URL"
-say "数据文件： ${XDG_DATA_HOME:-$HOME/.local/share}/local-calendar/calendar.json"
+say "本地日历 1.0： $URL"
+say "数据文件： ${XDG_DATA_HOME:-$HOME/.local/share}/local-calendar/calendar-1.0.json"
 say "（数据保存在本机浏览器中，不会上传；关闭浏览器后服务仍在后台，停止请执行 ./calendar.sh --stop）"
 
 if [ "$DO_OPEN" = "1" ]; then

@@ -3,6 +3,14 @@
 """
 生成节假日数据（holidays.json 与 index.html 里的内置表）
 
+数据来源：中国政府网公布的国务院办公厅通知原文
+  2024 国办发明电〔2023〕7号  https://www.gov.cn/gongbao/2023/issue_10806/202311/content_6913823.html
+  2025 国办发明电〔2024〕12号 http://big5.www.gov.cn/gate/big5/www.gov.cn/gongbao/2024/issue_11726/202411/content_6989767.html
+  2026 国办发明电〔2025〕7号  https://www.gov.cn/zhengce/content/202511/content_7047090.htm
+
+以后每年新通知发布后，把新的 range/work 加进下面，然后：
+    python3 tools/make-holidays.py            # 重新生成 ../holidays.json
+    python3 tools/make-holidays.py --js       # 打印供粘贴进 index.html 的内置表
 """
 import datetime
 import json

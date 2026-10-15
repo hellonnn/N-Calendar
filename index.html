@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>日历</title>
+<title>日历 1.0</title>
 <style>
 /* ============ 主题变量 ============ */
 :root{
@@ -211,6 +211,160 @@ html[data-theme="dark"] .ev .tm{color:rgba(231,233,239,.72)}
 .ag-item .ag-title{font-size:13px;font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ag-item.done .ag-title{text-decoration:line-through;opacity:.55}
 .ag-empty{font-size:12px;color:var(--muted);padding:2px 9px;opacity:.8}
+/* 版本历史 */
+.hrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:6px;background:var(--panel-2)}
+.hrow .ht{flex:1;min-width:0}
+.hrow .ht b{font-weight:600;font-size:13px}
+.hrow .ht div{font-size:11.5px;color:var(--muted);margin-top:2px}
+.hrow button{flex:none}
+.hrow.cur{border-color:var(--accent);background:var(--accent-soft)}
+
+/* 打印预览 */
+#printRoot{position:fixed;inset:0;background:#e9ebf0;z-index:150;display:none;flex-direction:column}
+#printRoot.open{display:flex}
+.pr-bar{display:flex;align-items:center;gap:9px;padding:9px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pr-paper{flex:1;overflow:auto;padding:18px}
+.pr-page{background:#fff;color:#111;width:210mm;min-height:297mm;margin:0 auto;padding:14mm 12mm 10mm;
+  box-shadow:0 4px 24px rgba(0,0,0,.18);font-size:12px;line-height:1.5}
+.pr-page h1{font-size:18px;margin:0 0 3px;font-weight:700}
+.pr-page h1 small{font-size:12px;color:#666;font-weight:400;margin-left:8px}
+.pr-page .sub{color:#666;font-size:11px;margin-bottom:12px;border-bottom:1px solid #ddd;padding-bottom:6px}
+.pr-sec{margin:0 0 12px}
+.pr-sec h3{font-size:13px;margin:0 0 4px;padding:3px 0;border-bottom:1px solid #ddd}
+.pr-sec h3 .n{color:#888;font-weight:400;font-size:11px;margin-left:6px}
+.pr-item{display:flex;gap:8px;align-items:baseline;padding:2.5px 0;border-bottom:1px dotted #eee}
+.pr-item .box{width:11px;height:11px;border:1px solid #999;border-radius:2px;flex:none;position:relative;top:1px}
+.pr-item .tm{width:78px;flex:none;color:#555;font-variant-numeric:tabular-nums;font-size:11px}
+.pr-item .tt{flex:1}
+.pr-item .tg{color:#777;font-size:10.5px}
+.pr-item .pr-p{font-size:10px;border:1px solid #bbb;border-radius:3px;padding:0 3px;color:#444}
+.pr-item.done .tt{text-decoration:line-through;color:#999}
+.pr-item.holiday .tt{color:#b91c1c}
+.pr-grid{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid #bbb}
+.pr-grid .h{padding:4px;text-align:center;font-weight:600;border-bottom:1px solid #bbb;border-right:1px solid #ddd;background:#f6f7f9;font-size:11px}
+.pr-grid .c{border-right:1px solid #ddd;border-bottom:1px solid #ddd;padding:3px 4px;min-height:88px;vertical-align:top}
+.pr-grid .c .dn{font-weight:700;font-size:12px}
+.pr-grid .c .dl{font-size:10px;color:#777}
+.pr-grid .c.other{background:#fafafa;color:#999}
+.pr-grid .c.off .dn{color:#b91c1c}
+.pr-grid .c .it{font-size:10.5px;padding:1px 0;border-bottom:1px dotted #eee;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-grid .c .it .t{color:#555;margin-right:3px}
+.pr-foot{margin-top:10px;border-top:1px solid #ddd;padding-top:6px;color:#888;font-size:10px;display:flex;justify-content:space-between}
+@media print{
+  body > *{display:none !important}
+  #printRoot{display:block !important;position:static;background:#fff}
+  .pr-bar{display:none !important}
+  .pr-paper{padding:0;overflow:visible}
+  .pr-page{box-shadow:none;width:auto;min-height:0;padding:0;margin:0;font-size:11px}
+  @page{size:A4;margin:12mm}
+}
+
+/* 统计面板 */
+.st-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:9px;margin-bottom:16px}
+.st-card{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:10px 12px}
+.st-card .n{font-size:21px;font-weight:650;line-height:1.25}
+.st-card .l{font-size:11.5px;color:var(--muted);margin-top:1px}
+.st-card.warn .n{color:#e11d48}
+html[data-theme="dark"] .st-card.warn .n{color:#ff9a9a}
+.st-sec{margin-bottom:16px}
+.st-sec h4{margin:0 0 8px;font-size:12.5px;color:var(--muted);font-weight:600;display:flex;gap:8px;align-items:baseline}
+.st-sec h4 em{font-style:normal;font-weight:400;opacity:.8}
+.st-row{display:flex;align-items:center;gap:9px;margin-bottom:5px;font-size:12.5px}
+.st-row .name{width:76px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.st-row .track{flex:1;height:16px;background:var(--panel-2);border-radius:5px;overflow:hidden;position:relative}
+.st-row .track i{display:block;height:100%;border-radius:5px;background:var(--accent);transition:width .3s}
+.st-row .val{width:88px;flex:none;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.st-days{display:flex;align-items:flex-end;gap:3px;height:96px;padding-top:4px}
+.st-days .d{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%}
+.st-days .d i{width:100%;background:var(--accent-soft);border-radius:3px 3px 0 0;min-height:2px;display:block}
+.st-days .d.has i{background:var(--accent)}
+.st-days .d.today i{background:#f43f5e}
+.st-days .d b{font-size:9.5px;color:var(--muted);font-weight:500}
+.st-note{font-size:11.5px;color:var(--muted);line-height:1.7}
+
+/* 筛选条与筛选面板 */
+.filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 14px;
+  background:var(--panel-2);border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.filters .fchip{display:inline-flex;align-items:center;gap:5px;background:var(--panel);border:1px solid var(--line);
+  border-radius:999px;padding:2px 9px;color:var(--text);cursor:pointer}
+.filters .fchip b{opacity:.55;font-weight:700}
+.filters .fchip:hover{border-color:var(--accent);color:var(--accent)}
+.filters .fclear{margin-left:auto;color:var(--accent);cursor:pointer;font-weight:600}
+#filterBtn.on{color:var(--accent);background:var(--accent-soft)}
+.fpop{position:absolute;right:0;top:40px;width:264px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;box-shadow:var(--shadow-lg);padding:12px;display:none;z-index:60}
+.fpop.open{display:block;animation:pop .14s ease}
+.fpop h4{margin:0 0 7px;font-size:12px;color:var(--muted);font-weight:600}
+.fpop .frow{margin-bottom:12px}
+.fpop .frow:last-child{margin-bottom:0}
+.fpop .tagpick{display:flex;flex-wrap:wrap;gap:5px}
+.fpop .tagpick span{font-size:12px;padding:2px 9px;border-radius:999px;background:var(--panel-2);
+  border:1px solid var(--line);cursor:pointer;color:var(--muted)}
+.fpop .tagpick span.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.fpop .swatchpick{display:flex;gap:7px;flex-wrap:wrap}
+.fpop .swatchpick i{width:22px;height:22px;border-radius:7px;background:rgb(var(--c));cursor:pointer;
+  border:2px solid transparent;display:block}
+.fpop .swatchpick i.on{border-color:var(--text);box-shadow:0 0 0 2px var(--panel) inset}
+
+/* 快速添加预览 */
+.q-preview{font-size:13px;line-height:1.9;color:var(--text);background:var(--panel-2);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+.q-preview .k{color:var(--muted);margin-right:6px}
+.q-preview .v{font-weight:600}
+.q-preview .warn{color:#e11d48}
+.q-preview .title-preview{font-size:14px;font-weight:650}
+.q-preview em{color:var(--muted);font-style:normal}
+
+/* 清单（待办）视图 */
+.todo{flex:1;overflow:auto;padding:4px 10px 18px}
+.todo-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 4px 10px;border-bottom:1px solid var(--line)}
+.todo-bar{flex:1;min-width:80px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.todo-bar i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .3s}
+.todo-stat{font-size:12px;color:var(--muted);white-space:nowrap}
+.seg.mini button{padding:3px 9px;font-size:12px}
+.tgroup{margin-top:12px}
+.tgroup > h3{margin:0 0 4px;font-size:12.5px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+.tgroup > h3 .n{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:0 6px;font-size:11px;font-weight:500}
+.tgroup > h3.warn{color:#e11d48}
+html[data-theme="dark"] .tgroup > h3.warn{color:#ff9a9a}
+.titem{display:flex;align-items:flex-start;gap:9px;padding:7px 9px;border-radius:10px;border:1px solid transparent;transition:.12s;cursor:pointer}
+.titem:hover{background:var(--panel-2);border-color:var(--line)}
+.titem .bar{width:3px;border-radius:2px;align-self:stretch;background:rgb(var(--c));flex:none}
+.titem .cb{width:17px;height:17px;margin-top:2px;border-radius:5px;border:1.6px solid var(--muted);flex:none;
+  cursor:pointer;display:grid;place-items:center;transition:.12s}
+.titem .cb:hover{border-color:var(--accent)}
+.titem.done .cb{background:var(--accent);border-color:var(--accent)}
+.titem .cb svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;display:none}
+.titem.done .cb svg{display:block}
+.titem .body{flex:1;min-width:0}
+.titem .tt{font-size:13.5px;font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.titem.done .tt{text-decoration:line-through;opacity:.55}
+.titem .meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:3px;font-size:11.5px;color:var(--muted)}
+.titem .meta .sp{opacity:.5}
+.tempty{text-align:center;color:var(--muted);padding:40px 10px;font-size:13px}
+
+/* 标签 / 优先级 */
+.tag-edit{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1px solid var(--line);
+  background:var(--panel-2);border-radius:10px;padding:5px 8px;min-height:38px;transition:.15s}
+.tag-edit:focus-within{border-color:var(--accent);background:var(--panel);box-shadow:0 0 0 3px var(--accent-soft)}
+.tag-edit input{flex:1;min-width:80px;border:0;background:transparent;outline:none;height:26px}
+.tag-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:2px 8px;border-radius:999px;
+  background:var(--accent-soft);color:var(--accent);font-weight:550;white-space:nowrap}
+.tag-chip b{cursor:pointer;opacity:.6;font-weight:700}
+.tag-chip b:hover{opacity:1}
+.tag{display:inline-block;font-size:10.5px;padding:0 6px;border-radius:999px;line-height:16px;
+  background:var(--panel-2);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.prio{font-size:10px;font-weight:700;padding:0 4px;border-radius:4px;line-height:15px;flex:none}
+.prio.p1{background:rgba(100,116,139,.16);color:#64748b}
+.prio.p2{background:rgba(240,158,20,.20);color:#b45309}
+.prio.p3{background:rgba(244,63,94,.16);color:#e11d48}
+html[data-theme="dark"] .prio.p1{background:rgba(148,163,184,.2);color:#cbd5e1}
+html[data-theme="dark"] .prio.p2{background:rgba(240,158,20,.22);color:#fbbf24}
+html[data-theme="dark"] .prio.p3{background:rgba(244,63,94,.22);color:#ff8a8a}
+.late{color:#e11d48;font-weight:600}
+html[data-theme="dark"] .late{color:#ff9a9a}
+
 /* 农历 / 节假日 */
 .ctop{display:flex;align-items:center;gap:4px}
 .ctop .add{margin-left:auto}
@@ -360,6 +514,32 @@ kbd{background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input id="search" type="text" placeholder="搜索事项  /" autocomplete="off">
       </div>
+      <div class="menu">
+        <button class="iconbtn" id="filterBtn" title="筛选（标签 / 颜色 / 状态）">
+          <svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>
+        </button>
+        <div class="fpop" id="filterPop">
+          <div class="frow">
+            <h4>标签</h4>
+            <div class="tagpick" id="tagPick"></div>
+          </div>
+          <div class="frow">
+            <h4>颜色</h4>
+            <div class="swatchpick" id="colorPick"></div>
+          </div>
+          <div class="frow">
+            <h4>状态</h4>
+            <div class="seg mini" id="statusPick">
+              <button data-status="open">未完成</button>
+              <button data-status="all">全部</button>
+              <button data-status="done">已完成</button>
+            </div>
+          </div>
+          <div class="frow" style="text-align:right">
+            <button class="btn ghost" id="filterClear" style="height:28px;padding:0 10px;font-size:12.5px">清除全部筛选</button>
+          </div>
+        </div>
+      </div>
       <button class="iconbtn" id="searchToggle" title="搜索 (/)">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       </button>
@@ -367,6 +547,7 @@ kbd{background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2
         <button data-view="day">日</button>
         <button data-view="week">周</button>
         <button data-view="month">月</button>
+        <button data-view="list">清单</button>
       </div>
       <button class="btn primary" id="new">
         <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round"><path d="M12 5v14M5 12h14"/></svg>
@@ -383,6 +564,11 @@ kbd{background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2
           <hr>
           <button id="mExport">导出备份 (.json)</button>
           <button id="mImport">导入备份…</button>
+          <button id="mQuick">快速添加（Q）</button>
+          <button id="mStats">统计面板（S）</button>
+          <button id="mPrint">打印 / 导出（P）</button>
+          <button id="mUndo">撤销上一步（Ctrl+Z）</button>
+          <button id="mHistory">版本历史 / 备份…</button>
           <button id="mSample">载入示例事项</button>
           <hr>
           <button id="mHelp">快捷键</button>
@@ -391,6 +577,8 @@ kbd{background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2
       </div>
     </div>
   </div>
+
+  <div class="filters" id="activeFilters" style="display:none"></div>
 
   <!-- ===== 视图 ===== -->
   <div class="view" id="view"></div>
@@ -424,6 +612,9 @@ kbd{background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2
       </div>
       <div class="field">
         <label>重复</label>
+        <div class="checks" style="margin:-2px 0 2px">
+          <label class="check"><input type="checkbox" id="fSkipRest"> 跳过周末和法定假日（自动用节假日数据）</label>
+        </div>
         <div class="row">
           <select id="fRepeat">
             <option value="none">不重复</option>
@@ -434,6 +625,27 @@ kbd{background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2
           <input type="date" id="fUntil" title="重复结束日期">
         </div>
         <div class="hint">右侧留空表示一直重复；填写则为重复的结束日期。</div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>优先级</label>
+          <select id="fPriority">
+            <option value="0">无</option>
+            <option value="1">低</option>
+            <option value="2">中</option>
+            <option value="3">高</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>截止日（可选）</label>
+          <input type="date" id="fDue">
+        </div>
+      </div>
+      <div class="field">
+        <label>标签（回车添加，最多 8 个）</label>
+        <div class="tag-edit" id="fTagWrap">
+          <input type="text" id="fTagInput" list="tagSuggest" placeholder="如：工作 / 健身 / 学习" autocomplete="off">
+        </div>
       </div>
       <div class="field">
         <label>颜色</label>
@@ -449,6 +661,87 @@ kbd{background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2
       <div class="spacer"></div>
       <button class="btn ghost" id="edCancel">取消</button>
       <button class="btn primary" id="edSave">保存</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ===== 版本历史 ===== -->
+<div class="backdrop" id="history">
+  <div class="sheet" style="max-width:560px">
+    <header>
+      <h2>版本历史</h2>
+      <button class="iconbtn" id="hClose"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="body">
+      <div class="hint" id="hNote">每次覆盖保存前会自动留一份快照。</div>
+      <div id="hList"></div>
+    </div>
+    <footer>
+      <button class="btn" id="hNow">立即备份</button>
+      <span class="spacer"></span>
+      <button class="btn ghost" id="hClose2">关闭</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ===== 打印预览 ===== -->
+<div id="printRoot">
+  <div class="pr-bar">
+    <span style="font-weight:600" id="prTitle">打印预览</span>
+    <div class="seg mini" id="prKind">
+      <button data-kind="week">周计划</button>
+      <button data-kind="month">月计划</button>
+      <button data-kind="todo">待办清单</button>
+    </div>
+    <label class="check" style="font-size:12.5px"><input type="checkbox" id="prDone"> 包含已完成事项</label>
+    <span class="spacer"></span>
+    <button class="btn" id="prSave">另存为 HTML</button>
+    <button class="btn" id="prPdf">导出 PDF</button>
+    <button class="btn primary" id="prPrint">打印</button>
+    <button class="btn ghost" id="prClose">关闭</button>
+  </div>
+  <div class="pr-paper"><div class="pr-page" id="prPage"></div></div>
+</div>
+
+<!-- ===== 统计 ===== -->
+<div class="backdrop" id="stats">
+  <div class="sheet" style="max-width:640px">
+    <header>
+      <h2>统计</h2>
+      <div class="seg mini" id="stPeriod" style="margin-right:6px">
+        <button data-period="week">本周</button>
+        <button data-period="month">本月</button>
+        <button data-period="all">全部</button>
+      </div>
+      <button class="iconbtn" id="stClose"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="body" id="statsBody"></div>
+  </div>
+</div>
+
+<!-- ===== 快速添加 ===== -->
+<div class="backdrop" id="quick">
+  <div class="sheet" style="max-width:540px">
+    <header>
+      <h2>快速添加</h2>
+      <button class="iconbtn" id="qClose"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="body">
+      <div class="field">
+        <input type="text" id="qInput" placeholder="明天 10:00 项目例会 #工作 !高 45min" autocomplete="off">
+      </div>
+      <div class="q-preview" id="qPreview"></div>
+      <div class="hint">
+        日期：今天 / 明天 / 后天 / 周三 / 下周五 / 3天后 / 10月20日 / 2026-10-20<br>
+        时间：10:00 · 10点 · 下午3点半 &nbsp;|&nbsp; 时长：45min · 1h · 到11:30<br>
+        重复：每天 / 每周 / 每月 / 工作日（自动跳过周末与法定假日）<br>
+        其它：#标签 &nbsp; 优先级：!高 !中 !低（或 !!! !! !）
+      </div>
+    </div>
+    <footer>
+      <span class="spacer"></span>
+      <button class="btn ghost" id="qCancel">取消</button>
+      <button class="btn primary" id="qCreate">创建（Enter）</button>
     </footer>
   </div>
 </div>
@@ -476,6 +769,7 @@ kbd{background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2
 
 <div class="toast" id="toast"></div>
 <input type="file" id="fileInput" accept=".json,application/json" style="display:none">
+<datalist id="tagSuggest"></datalist>
 
 <script>
 "use strict";
@@ -523,7 +817,7 @@ const RGB = {
 const CNAME = { indigo:"靛蓝", blue:"天蓝", teal:"青绿", green:"翠绿", amber:"琥珀", rose:"玫红", violet:"紫罗兰", slate:"岩灰" };
 
 const HOUR = 56;              // 每小时高度(px)，与 CSS --hour 保持一致
-const STORE = "local-calendar-v1";
+const STORE = "local-calendar-1.0";
 
 /* =====================================================================
    农历（1900–2100 经典算法）与传统节日
@@ -675,9 +969,50 @@ function updateHolidayNote() {
     "\n（可用同目录的 holidays.json 覆盖，或用 tools/make-holidays.py 更新）";
 }
 
+/* =====================================================================
+   撤销 / 重做：只记录"事项数据"的快照，视图状态（当前视图/筛选）不受影响
+   ===================================================================== */
+let undoStack = [];
+let redoStack = [];
+const UNDO_MAX = 50;
+
+const snapshotEvents = () => JSON.stringify(state.events);
+
+function pushUndoSnapshot(label, json) {
+  undoStack.push({ label: label, data: json, at: Date.now() });
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  redoStack.length = 0;
+}
+function pushUndo(label) { pushUndoSnapshot(label, snapshotEvents()); }
+
+function applySnapshot(json) {
+  state.events = JSON.parse(json).map(normalize);
+  dirtySinceBoot = true;
+  save(); render();
+  refreshTagSuggest();
+}
+function undo() {
+  if (!undoStack.length) return toast("没有可撤销的操作");
+  const last = undoStack.pop();
+  redoStack.push({ label: last.label, data: snapshotEvents() });
+  applySnapshot(last.data);
+  toast("已撤销：" + last.label);
+}
+function redo() {
+  if (!redoStack.length) return toast("没有可重做的操作");
+  const last = redoStack.pop();
+  undoStack.push({ label: last.label, data: snapshotEvents(), at: Date.now() });
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  applySnapshot(last.data);
+  toast("已重做：" + last.label);
+}
+
 /* ---------- 状态 ---------- */
 let state = {
   events: [],
+  status: "open",        // 清单视图：open / all / done
+  tagFilter: [],         // 选中的标签（全部满足）
+  colorFilter: "",       // 颜色筛选
   view: "month",
   cursor: new Date(),
   theme: "auto",
@@ -699,6 +1034,9 @@ function applyDoc(d) {
   if (Array.isArray(d.events)) state.events = d.events.map(normalize);
   if (d.view) state.view = d.view;
   if (d.theme) state.theme = d.theme;
+  if (["open", "all", "done"].includes(d.status)) state.status = d.status;
+  if (Array.isArray(d.tagFilter)) state.tagFilter = d.tagFilter;
+  if (typeof d.colorFilter === "string") state.colorFilter = d.colorFilter;
 }
 function loadLocal() {
   try {
@@ -714,7 +1052,10 @@ const localStamp = () => { try { return Number(localStorage.getItem(STORE + "-at
 function mirrorLocal(at) {
   if (!storageOK) return;
   try {
-    localStorage.setItem(STORE, JSON.stringify({ events: state.events, view: state.view, theme: state.theme }));
+    localStorage.setItem(STORE, JSON.stringify({
+      events: state.events, view: state.view, theme: state.theme,
+      status: state.status, tagFilter: state.tagFilter, colorFilter: state.colorFilter
+    }));
     localStorage.setItem(STORE + "-at", String(at || Date.now()));
   } catch (e) {
     storageOK = false;
@@ -781,8 +1122,12 @@ function updateStorageLabel() {
     el.textContent = "数据：浏览器本地存储（未连接本地服务）";
   }
 }
+/* 优先级：0=无 1=低 2=中 3=高 */
+const PRIO = ["", "低", "中", "高"];
+const PRIO_CLASS = ["", "p1", "p2", "p3"];
+
 function normalize(e) {
-  return {
+  const o = {
     id: e.id || uid(),
     title: String(e.title || "未命名事项"),
     date: e.date || ymd(new Date()),
@@ -794,8 +1139,17 @@ function normalize(e) {
     done: !!e.done,
     repeat: ["daily","weekly","monthly"].includes(e.repeat) ? e.repeat : "none",
     until: e.until || "",
-    skip: Array.isArray(e.skip) ? e.skip.slice() : []
+    skip: Array.isArray(e.skip) ? e.skip.slice() : [],
+    /* 1.0 新增：标签 / 优先级 / 截止日 */
+    tags: Array.isArray(e.tags)
+      ? Array.from(new Set(e.tags.map(t => String(t).trim()).filter(Boolean))).slice(0, 8) : [],
+    priority: [0, 1, 2, 3].includes(Number(e.priority)) ? Number(e.priority) : 0,
+    due: /^\d{4}-\d{2}-\d{2}$/.test(e.due || "") ? e.due : "",
+    skipRest: !!e.skipRest            // 重复时跳过周末与法定假日
   };
+  o.prioName = PRIO[o.priority] || "";        // 渲染/统计用
+  o.dueDate = o.due || o.date;                // 未单独设截止日时，事项日期即截止日
+  return o;
 }
 const getEvent = id => state.events.find(e => e.id === id);
 
@@ -809,20 +1163,51 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
   if (state.theme === "auto") applyTheme();
 });
 
+/* 某天是否休息日（周末且非调休上班，或法定放假） */
+function isRestDay(date) {
+  const h = holidayOf(ymd(date));
+  if (h.work) return false;
+  if (h.off) return true;
+  const wd = date.getDay();
+  return wd === 0 || wd === 6;
+}
+/* 从某天起（含当天）的下一个工作日 */
+function nextWorkday(date) {
+  let d = new Date(date);
+  for (let i = 0; i < 30 && isRestDay(d); i++) d = addDays(d, 1);
+  return d;
+}
+
+/* ---------- 筛选：搜索关键字（支持 #标签）、标签、颜色 ---------- */
+function matchesFilter(ev) {
+  const q = (state.query || "").trim().toLowerCase();
+  if (state.colorFilter && ev.color !== state.colorFilter) return false;
+  if (state.tagFilter && state.tagFilter.length) {
+    const have = ev.tags || [];
+    if (!state.tagFilter.every(t => have.includes(t))) return false;
+  }
+  if (!q) return true;
+  return q.split(/\s+/).filter(Boolean).every(part => {
+    if (part.startsWith("#")) {
+      const t = part.slice(1);
+      return (ev.tags || []).some(x => x.toLowerCase().includes(t));
+    }
+    return (ev.title + " " + ev.note + " " + (ev.tags || []).join(" ")).toLowerCase().includes(part);
+  });
+}
+
 /* ---------- 重复事项展开 ---------- */
 function occurrences(from, to) {
   // from/to: Date（含首尾当天）
   const out = [];
-  const q = state.query.trim().toLowerCase();
   const DAY = 86400000;
   for (const ev of state.events) {
-    if (q) {
-      const hay = (ev.title + " " + ev.note).toLowerCase();
-      if (!hay.includes(q)) continue;
-    }
+    if (!matchesFilter(ev)) continue;
     const base = parseYMD(ev.date);
     if (ev.repeat === "none") {
-      if (base >= from && base <= to && !ev.skip.includes(ev.date)) out.push({ ev, date: ev.date });
+      const day = ev.skipRest ? nextWorkday(base) : base;
+      const ds = ymd(day);
+      if (day >= from && day <= to && !ev.skip.includes(ds)) out.push({ ev, date: ds });
       continue;
     }
     const until = ev.until ? parseYMD(ev.until) : null;
@@ -841,7 +1226,7 @@ function occurrences(from, to) {
       if (until && cur > until) break;
       if (cur >= from) {
         const ds = ymd(cur);
-        if (!ev.skip.includes(ds)) out.push({ ev, date: ds });
+        if (!ev.skip.includes(ds) && !(ev.skipRest && isRestDay(cur))) out.push({ ev, date: ds });
       }
       i++;
     }
@@ -891,8 +1276,12 @@ function render() {
   document.querySelectorAll("#views button").forEach(b => b.classList.toggle("on", b.dataset.view === state.view));
   if (state.view === "day") renderDay();
   else if (state.view === "week") (isCompact() ? renderAgenda() : renderWeek());
+  else if (state.view === "list") renderList();
   else renderMonth();
   titleEl.innerHTML = titleHTML();
+  paintActiveFilters();
+  const fb = document.getElementById("filterBtn");
+  if (fb) fb.classList.toggle("on", !!hasFilter());
   if (dirtyScroll) {
     dirtyScroll = false;
     scrollGridToStart();
@@ -937,6 +1326,12 @@ function titleHTML() {
     const m = dayMeta(c);
     return `${c.getFullYear()} 年 ${c.getMonth() + 1} 月 ${c.getDate()} 日<small>${wd}${rel ? " · " + rel : ""} · 农历${esc(m.lunar.text)}${m.off ? " · " + esc(m.off) : m.lunar.festival ? " · " + esc(m.lunar.festival) : ""}${m.work ? " · 调休上班" : ""}</small>`;
   }
+  if (state.view === "list") {
+    const items = listItems();
+    const open = items.filter(i => !i.ev.done).length;
+    const late = items.filter(i => !i.ev.done && i.ev.dueDate < ymd(new Date())).length;
+    return `待办清单<small>未完成 ${open} 项${late ? " · 已逾期 " + late + " 项" : ""}</small>`;
+  }
   if (state.view === "week") {
     const s = startOfWeek(c), e = addDays(s, 6);
     const sameMonth = s.getMonth() === e.getMonth();
@@ -965,6 +1360,11 @@ function evBox(ev) {
   return { top: s / 60 * HOUR, h: Math.max(24, dur / 60 * HOUR - 2), dur };
 }
 
+/* 优先级小徽标（日历视图里用） */
+function prioHTML(ev) {
+  return ev.priority ? `<span class="prio ${PRIO_CLASS[ev.priority]}">${PRIO[ev.priority]}</span> ` : "";
+}
+
 function evHTML(o, compact) {
   const ev = o.ev;
   const rep = ev.repeat !== "none";
@@ -972,11 +1372,11 @@ function evHTML(o, compact) {
   const c = RGB[ev.color].join(",");
   if (compact) {
     return `<div class="chip${ev.done ? " done" : ""}" data-id="${ev.id}" data-date="${o.date}" style="--c:${c}" title="${esc(tip)}">` +
-      `${ev.allDay ? "" : `<span class="ct">${hhmm(ev.start)}</span>`}<span>${esc(ev.title)}</span></div>`;
+      `${ev.allDay ? "" : `<span class="ct">${hhmm(ev.start)}</span>`}${ev.priority >= 2 ? prioHTML(ev) : ""}${ev.repeat !== "none" ? "↻ " : ""}<span>${esc(ev.title)}</span></div>`;
   }
   const b = evBox(ev);
   return `<div class="ev${ev.done ? " done" : ""}" data-id="${ev.id}" data-date="${o.date}" data-occurrence="${o.date}" style="${evStyle(o, b.top, b.h)}" title="${esc(tip)}">` +
-    `<div class="t">${rep ? "↻ " : ""}${esc(ev.title)}</div>` +
+    `<div class="t">${prioHTML(ev)}${rep ? "↻ " : ""}${esc(ev.title)}</div>` +
     `<div class="tm">${hhmm(ev.start)}${ev.end ? " – " + hhmm(ev.end) : ""}</div></div>`;
 }
 
@@ -1023,7 +1423,7 @@ function renderDay() {
 function chipAllDay(o) {
   const ev = o.ev;
   const time = ev.allDay ? "" : `<span class="ct">${hhmm(ev.start)}</span>`;
-  return `<div class="chip${ev.done ? " done" : ""}" data-id="${ev.id}" data-date="${o.date}" style="--c:${RGB[ev.color].join(",")}" title="${esc(ev.title)}">${time}${ev.repeat !== "none" ? "↻ " : ""}<span>${esc(ev.title)}</span></div>`;
+  return `<div class="chip${ev.done ? " done" : ""}" data-id="${ev.id}" data-date="${o.date}" style="--c:${RGB[ev.color].join(",")}" title="${esc(ev.title)}">${time}${ev.priority >= 2 ? prioHTML(ev) : ""}${ev.repeat !== "none" ? "↻ " : ""}<span>${esc(ev.title)}</span></div>`;
 }
 
 /* ----- 周视图 ----- */
@@ -1111,6 +1511,296 @@ function renderAgenda() {
   viewEl.innerHTML = html;
 }
 
+/* =====================================================================
+   快速添加语法
+     「明天 10:00 项目例会 #工作 !高 45min」
+   · 日期：今天/明天/后天/大后天、周一~周日（含 下周三 / 本周五）、
+           10月20日 / 10-20 / 2026-10-20 / 3天后
+   · 时间：10:00 / 10点 / 10点半 / 下午3点 / 晚上8点 / 早上7:30
+   · 时长：45min / 45分钟 / 1h / 1.5h / 到 11:30
+   · 重复：每天 / 每周 / 每月 / 每周三 / 每月15日（工作日 = 每天但自动跳过周末与法定假日）
+   · 标签：#工作   · 优先级：!高 !中 !低（或 !!! !! !）
+   解析不出来的部分一律当作标题，绝不丢字。
+   ===================================================================== */
+const CN_NUM = { 零:0, 一:1, 二:2, 两:2, 三:3, 四:4, 五:5, 六:6, 七:7, 八:8, 九:9, 十:10, 十一:11, 十二:12 };
+const WD_CN = { "一":1, "二":2, "三":3, "四":4, "五":5, "六":6, "日":0, "天":0 };
+
+function cn2num(t) {
+  if (/^\d+$/.test(t)) return Number(t);
+  if (t in CN_NUM) return CN_NUM[t];
+  const m = /^十([一二三四五六七八九])$/.exec(t);
+  if (m) return 10 + CN_NUM[m[1]];
+  return NaN;
+}
+
+/* 返回 { date, start, end, allDay, repeat, tags, priority, title, matched[] } */
+function parseQuickAdd(text) {
+  const today0 = dayStart(new Date());
+  let rest = " " + text.trim() + " ";
+  const matched = [];
+  const out = { date: ymd(today0), start: "", end: "", allDay: true, repeat: "none", tags: [], priority: 0, due: "" };
+  const eat = (re, fn) => {
+    const m = re.exec(rest);
+    if (!m) return false;
+    const r = fn(m);
+    if (r === false) return false;
+    rest = rest.slice(0, m.index) + " " + rest.slice(m.index + m[0].length);
+    matched.push(m[0].trim());
+    return true;
+  };
+
+  // ---- 优先级 ----
+  eat(/\s!(高|中|低)(?=\s|$)/, m => { out.priority = { 高: 3, 中: 2, 低: 1 }[m[1]]; return true; });
+  eat(/\s(!{1,3})(?=\s|$)/, m => { out.priority = m[1].length; return true; });
+
+  // ---- 标签 ----
+  let tagM;
+  const tagRe = /\s#([^\s#]{1,20})/g;
+  while ((tagM = tagRe.exec(rest))) out.tags.push(tagM[1]);
+  if (out.tags.length) { rest = rest.replace(/\s#[^\s#]{1,20}/g, " "); matched.push(...out.tags.map(t => "#" + t)); }
+
+  // ---- 重复（带具体星期/日号的形式要放在通用形式之前） ----
+  eat(/\s每(?:周|星期)([一二三四五六日天])(?=\s|$)/, m => {
+    const t0 = dayStart(new Date());
+    const target = WD_CN[m[1]];
+    out.repeat = "weekly";
+    out.date = ymd(addDays(t0, ((target - t0.getDay()) + 7) % 7));   // 定到最近的这个星期几
+    return true;
+  });
+  eat(/\s每月\s*(\d{1,2})[日号](?=\s|$)/, m => {
+    const day = +m[1];
+    if (day < 1 || day > 31) return false;
+    const t0 = dayStart(new Date());
+    const lastOf = (y, mo) => new Date(y, mo + 1, 0).getDate();
+    let d = new Date(t0.getFullYear(), t0.getMonth(), Math.min(day, lastOf(t0.getFullYear(), t0.getMonth())));
+    if (d < t0) {
+      const y = t0.getFullYear(), mo = t0.getMonth() + 1;
+      d = new Date(y, mo, Math.min(day, lastOf(y, mo)));
+    }
+    out.repeat = "monthly";
+    out.date = ymd(d);
+    return true;
+  });
+  eat(/\s(每个工作日|工作日)(?=\s|$)/, () => { out.repeat = "daily"; out.skipRest = true; return true; });
+  eat(/\s每天(?=\s|$)/, () => { out.repeat = "daily"; return true; });
+  eat(/\s每周(?=\s|$)/, () => { out.repeat = "weekly"; return true; });
+  eat(/\s每月(?=\s|$)/, () => { out.repeat = "monthly"; return true; });
+
+  // ---- 日期 ----
+  const setDate = d => { out.date = ymd(d); return true; };
+  eat(/\s(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?=\s|$)/, m => setDate(new Date(+m[1], +m[2] - 1, +m[3])));
+  eat(/\s(\d{1,2})月(\d{1,2})[日号]?(?=\s|$)/, m => {
+    let y = today0.getFullYear();
+    const d = new Date(y, +m[1] - 1, +m[2]);
+    if (d < today0) d.setFullYear(y + 1);
+    return setDate(d);
+  });
+  eat(/\s(\d{1,2})[-\/.](\d{1,2})(?=\s|$)/, m => {
+    let y = today0.getFullYear();
+    const d = new Date(y, +m[1] - 1, +m[2]);
+    if (d < today0) d.setFullYear(y + 1);
+    return setDate(d);
+  });
+  eat(/\s(\d+)\s*天后(?=\s|$)/, m => setDate(addDays(today0, +m[1])));
+  eat(/\s大后天(?=\s|$)/, () => setDate(addDays(today0, 3)));
+  eat(/\s后天(?=\s|$)/, () => setDate(addDays(today0, 2)));
+  eat(/\s明天|\s明日(?=\s|$)/, () => setDate(addDays(today0, 1)));
+  eat(/\s今天|\s今日(?=\s|$)/, () => setDate(today0));
+  eat(/\s(下下周|下周|本周|这周)([一二三四五六日天])(?=\s|$)/, m => {
+    const target = WD_CN[m[2]];
+    const base = startOfWeek(today0);
+    let d = addDays(base, ((target + 6) % 7));
+    if (m[1] === "下周") d = addDays(d, 7);
+    if (m[1] === "下下周") d = addDays(d, 14);
+    if (m[1] === "本周" || m[1] === "这周") {
+      if (d < today0) d = addDays(d, 7);
+    } else if (d < today0) {
+      d = addDays(d, 7);
+    }
+    return setDate(d);
+  });
+  eat(/\s(周|星期)([一二三四五六日天])(?=\s|$)/, m => {
+    const target = WD_CN[m[2]];
+    let d = addDays(today0, ((target - today0.getDay()) + 7) % 7);
+    if (ymd(d) === ymd(today0)) d = today0;           // 今天就是周X 时算今天
+    return setDate(d);
+  });
+
+  // ---- 结束时间（必须先于开始时间解析，否则「到 11:30」会被吃成开始时间） ----
+  eat(/\s到\s*(\d{1,2})[:：点时](\d{1,2})?分?(?=\s|$)/, m => {
+    out.end = pad(+m[1] % 24) + ":" + pad(m[2] === undefined ? 0 : +m[2]);
+    out.allDay = false;                      // 只写「到 11:30」也算定时事项
+    return true;
+  });
+  eat(/\s到\s*(\d{1,2})点半(?=\s|$)/, m => { out.end = pad(+m[1] % 24) + ":30"; out.allDay = false; return true; });
+
+  // ---- 时间 ----
+  const setTime = (h, mi, ampm) => {
+    if (ampm === "下午" || ampm === "晚上" || ampm === "傍晚") { if (h < 12) h += 12; }
+    else if (ampm === "中午") { if (h < 12) h = 12; }
+    else if (ampm === "凌晨" || ampm === "早上" || ampm === "上午") { if (h === 12) h = 0; }
+    out.start = pad(h % 24) + ":" + pad(mi);
+    out.allDay = false;
+    return true;
+  };
+  eat(/(凌晨|早上|上午|中午|下午|傍晚|晚上)?\s*(\d{1,2})[:：点时](\d{1,2})?分?(?=\s|$)/, m => {
+    const h = +m[2], mi = m[3] === undefined ? 0 : +m[3];
+    if (h > 24 || mi > 59) return false;
+    return setTime(h, mi, m[1]);
+  });
+  eat(/(凌晨|早上|上午|中午|下午|傍晚|晚上)?\s*(\d{1,2})点半(?=\s|$)/, m => setTime(+m[2], 30, m[1]));
+  eat(/(凌晨|早上|上午|中午|下午|傍晚|晚上)\s*(\d{1,2})点(?=\s|$)/, m => setTime(+m[2], 0, m[1]));
+
+  // ---- 时长 / 结束时间 ----
+  eat(/\s(\d+(?:\.\d+)?)\s*(?:h|H|小时)(?=\s|$)/, m => {
+    out.end = fromMin(toMin(out.start || "09:00") + Math.round(+m[1] * 60)); return true;
+  });
+  eat(/\s(\d+)\s*(?:min|分钟|分)(?=\s|$)/, m => {
+    out.end = fromMin(toMin(out.start || "09:00") + +m[1]); return true;
+  });
+
+  // 只写了「到 11:30」时，开始时间取前一小时；只写了开始时间时，默认 1 小时
+  if (out.end && !out.start && !out.allDay) out.start = fromMin(Math.max(0, toMin(out.end) - 60));
+  if (!out.allDay && !out.end) out.end = fromMin(Math.min(23 * 60 + 45, toMin(out.start) + 60));
+  out.tags = Array.from(new Set(out.tags)).slice(0, 8);
+  out.title = rest.replace(/\s+/g, " ").trim();
+  out.matched = matched;
+  return out;
+}
+
+/* ----- 清单（待办）视图 ----- */
+const dayStart = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+/* 重复事项：从 from 起算的下一次出现（与 occurrrences 同一套推算规则） */
+function nextOccurrence(ev, from) {
+  const base = parseYMD(ev.date);
+  const until = ev.until ? parseYMD(ev.until) : null;
+  let i = 0;
+  if (ev.repeat === "daily") i = Math.max(0, Math.floor((from - base) / 86400000));
+  else if (ev.repeat === "weekly") i = Math.max(0, Math.floor((from - base) / (7 * 86400000)));
+  else i = Math.max(0, (from.getFullYear() - base.getFullYear()) * 12 + (from.getMonth() - base.getMonth()) - 1);
+  for (let guard = 0; guard < 400; guard++, i++) {
+    const cur = ev.repeat === "daily" ? addDays(base, i)
+      : ev.repeat === "weekly" ? addDays(base, 7 * i) : addMonths(base, i);
+    if (until && cur > until) return null;
+    if (cur >= from && !ev.skip.includes(ymd(cur))) return cur;
+  }
+  return null;
+}
+
+/* 清单数据：单次事项用自身日期（可能逾期）；重复事项取下一次出现 */
+function listItems() {
+  const today0 = dayStart(new Date());
+  const out = [];
+  state.events.forEach(ev => {
+    if (ev.repeat === "none") {
+      out.push({ ev: ev, date: ev.date });
+    } else {
+      const next = nextOccurrence(ev, today0);
+      if (next) out.push({ ev: ev, date: ymd(next) });
+    }
+  });
+  return out.filter(it => matchesFilter(it.ev));
+}
+
+/* 分组：逾期 / 今天 / 明天 / 本周内 / 以后 / 已完成 */
+function listGroups(items) {
+  const today0 = dayStart(new Date());
+  const todayKey = ymd(today0);
+  const tomorrowKey = ymd(addDays(today0, 1));
+  const weekEnd = ymd(addDays(startOfWeek(today0), 6));
+  const g = { late: [], today: [], tomorrow: [], week: [], later: [], done: [] };
+  items.forEach(it => {
+    const ev = it.ev;
+    if (ev.done) return g.done.push(it);
+    const due = ev.dueDate;
+    if (due < todayKey) g.late.push(it);
+    else if (due === todayKey) g.today.push(it);
+    else if (due === tomorrowKey) g.tomorrow.push(it);
+    else if (due <= weekEnd) g.week.push(it);
+    else g.later.push(it);
+  });
+  const byPrioTime = (a, b) => (b.ev.priority - a.ev.priority) ||
+    toMin(a.ev.allDay ? "00:00" : a.ev.start) - toMin(b.ev.allDay ? "00:00" : b.ev.start) ||
+    (a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  Object.keys(g).forEach(k => g[k].sort(byPrioTime));
+  return g;
+}
+
+const TIER_TITLE = { late: "已逾期", today: "今天", tomorrow: "明天", week: "本周内", later: "以后", done: "已完成" };
+
+function renderList() {
+  const items = listItems();
+  const g = listGroups(items);
+  const status = state.status || "open";
+  const order = ["late", "today", "tomorrow", "week", "later", "done"];
+  const showDone = status !== "open";
+  const openCount = items.filter(i => !i.ev.done).length;
+  const doneCount = items.filter(i => i.ev.done).length;
+  const total = openCount + doneCount;
+  const pct = total ? Math.round(doneCount / total * 100) : 0;
+
+  let html = `<div class="todo">
+    <div class="todo-top">
+      <span class="todo-stat">完成 ${doneCount} / ${total}（${pct}%）</span>
+      <div class="todo-bar"><i style="width:${pct}%"></i></div>
+      <button class="btn" id="quickBtn" style="height:28px;padding:0 10px;font-size:12.5px">＋ 快速添加</button>
+      <div class="seg mini" id="statusSeg">
+        <button data-status="open" class="${status === "open" ? "on" : ""}">未完成</button>
+        <button data-status="all" class="${status === "all" ? "on" : ""}">全部</button>
+        <button data-status="done" class="${status === "done" ? "on" : ""}">已完成</button>
+      </div>
+    </div>`;
+
+  let shown = 0;
+  order.forEach(k => {
+    let list = g[k];
+    if (k === "done") { if (!showDone) return; }
+    else if (status === "done") return;
+    if (!list.length) return;
+    shown += list.length;
+    html += `<div class="tgroup"><h3 class="${k === "late" ? "warn" : ""}">${TIER_TITLE[k]}<span class="n">${list.length}</span></h3>`;
+    list.forEach(it => html += listRow(it));
+    html += `</div>`;
+  });
+
+  if (!shown) {
+    html += state.query || state.tagFilter
+      ? `<div class="tempty">没有符合条件的待办</div>`
+      : `<div class="tempty">还没有待办事项 —— 按 <b>N</b> 新建，或用顶部 <b>＋</b> 快速添加</div>`;
+  }
+  html += `</div>`;
+  viewEl.innerHTML = html;
+}
+
+function listRow(it) {
+  const ev = it.ev, m = dayMeta(parseYMD(it.date));
+  const overdue = !ev.done && ev.dueDate < ymd(dayStart(new Date()));
+  const time = ev.allDay ? "全天" : (hhmm(ev.start) + (ev.end ? "–" + hhmm(ev.end) : ""));
+  const dateTxt = it.date === ymd(dayStart(new Date())) ? "今天"
+    : it.date === ymd(addDays(dayStart(new Date()), 1)) ? "明天"
+      : (parseYMD(it.date).getMonth() + 1) + "月" + parseYMD(it.date).getDate() + "日";
+  const tags = (ev.tags || []).map(t => `<span class="tag" data-tag="${esc(t)}">${esc(t)}</span>`).join("");
+  const dueTxt = ev.dueDate.slice(5).replace("-", "/");
+  const dueHTML = overdue
+    ? `<span class="sp">·</span><span class="late">已逾期（截止 ${dueTxt}）</span>`
+    : (ev.due && ev.due !== ev.date ? `<span class="sp">·</span><span>截止 ${dueTxt}</span>` : "");
+  return `<div class="titem${ev.done ? " done" : ""}" data-id="${ev.id}" data-date="${it.date}" style="--c:${RGB[ev.color].join(",")}">
+      <span class="bar"></span>
+      <span class="cb" data-check="${ev.id}" title="标记完成/未完成"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></span>
+      <span class="body">
+        <span class="tt">${prioHTML(ev)}${ewRepeat(ev)}${esc(ev.title)}</span>
+        <span class="meta">
+          <span>${dateTxt} · ${time}</span>
+          ${dueHTML}
+          ${m.lunar.festival ? `<span class="sp">·</span><span>${esc(m.lunar.festival)}</span>` : (m.off ? `<span class="sp">·</span><span>${esc(m.off)}休</span>` : "")}
+          ${tags ? `<span class="sp">·</span>${tags}` : ""}
+        </span>
+      </span>
+    </div>`;
+}
+const ewRepeat = ev => ev.repeat !== "none" ? "↻ " : "";
+
 /* ----- 月视图 ----- */
 function renderMonth() {
   const first = new Date(state.cursor.getFullYear(), state.cursor.getMonth(), 1);
@@ -1170,6 +1860,539 @@ function emptyHTML(d) {
     </div></div>`;
 }
 
+/* =====================================================================
+   打印 / 导出：周计划表、月计划表、待办清单
+   页面侧只负责生成排版好的文档；实际打印或存盘交给 Python 桥
+   （窗口版用 GTK 打印对话框，可"打印到文件"出 PDF；浏览器版用 window.print）
+   ===================================================================== */
+let printKind = "week";
+
+/* 与系统日历/WebKit 的通信桥；浏览器模式下为 null */
+const bridge = (typeof window !== "undefined" && window.webkit && window.webkit.messageHandlers
+  && window.webkit.messageHandlers.cal) ? window.webkit.messageHandlers.cal : null;
+const hasBridge = () => !!bridge;
+
+function printItems(dateKey) {
+  const list = occurrences(parseYMD(dateKey), parseYMD(dateKey))
+    .filter(o => printShowDone || !o.ev.done)
+    .sort((a, b) => (a.ev.allDay === b.ev.allDay
+      ? toMin(a.ev.start) - toMin(b.ev.start)
+      : (a.ev.allDay ? -1 : 1)));
+  return list;
+}
+let printShowDone = false;
+
+function printItemHTML(o) {
+  const ev = o.ev;
+  const m = dayMeta(parseYMD(o.date));
+  const holiday = m.off ? m.off : (m.lunar.festival || "");
+  const time = ev.allDay ? "全天" : hhmm(ev.start) + (ev.end ? "–" + hhmm(ev.end) : "");
+  const tags = (ev.tags || []).map(t => "#" + t).join(" ");
+  return `<div class="pr-item${ev.done ? " done" : ""}${holiday ? " holiday" : ""}">
+    <span class="box"></span><span class="tm">${time}</span>
+    <span class="tt">${esc(ev.title)}${holiday ? ` <span class="tg">${esc(holiday)}</span>` : ""}${tags ? ` <span class="tg">${esc(tags)}</span>` : ""}</span>
+    ${ev.priority ? `<span class="pr-p">${PRIO[ev.priority]}</span>` : ""}
+  </div>`;
+}
+
+function printFoot() {
+  const d = new Date();
+  return `<div class="pr-foot"><span>日历 1.0 · 打印于 ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}</span><span>${hasFilter() ? "（已应用筛选条件）" : ""}</span></div>`;
+}
+
+function buildWeekPrint() {
+  const s0 = startOfWeek(state.cursor);
+  const e0 = addDays(s0, 6);
+  let html = `<h1>周计划<small>${s0.getFullYear()} 年 ${s0.getMonth() + 1} 月 ${s0.getDate()} 日 – ${e0.getMonth() + 1} 月 ${e0.getDate()} 日 · 第 ${weekNumber(s0)} 周</small></h1>
+    <div class="sub">按天列出本周事项；左侧方框可手写勾选，空白行可补充。</div>`;
+  const todayKey = ymd(new Date());
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(s0, i), key = ymd(d), m = dayMeta(d);
+    const tag = m.off ? `休 · ${m.off}` : (m.work ? "班（调休上班）" : (m.lunar.festival || ""));
+    const list = printItems(key);
+    html += `<div class="pr-sec">
+      <h3>${d.getMonth() + 1} 月 ${d.getDate()} 日 ${WD[d.getDay()]}${key === todayKey ? "（今天）" : ""}
+        <span class="n">农历${esc(m.lunar.text)}${tag ? " · " + esc(tag) : ""} · ${list.length} 项</span></h3>`;
+    html += list.length
+      ? list.map(printItemHTML).join("")
+      : `<div class="pr-item" style="color:#bbb"><span class="box"></span><span class="tm">—</span><span class="tt"></span></div>`;
+    html += `</div>`;
+  }
+  return html + printFoot();
+}
+
+function buildMonthPrint() {
+  const first = new Date(state.cursor.getFullYear(), state.cursor.getMonth(), 1);
+  const gridStart = startOfWeek(first);
+  let html = `<h1>月计划<small>${first.getFullYear()} 年 ${first.getMonth() + 1} 月</small></h1>
+    <div class="sub">每格列出当天事项，空白处可手写补充。</div><div class="pr-grid">`;
+  html += ["一", "二", "三", "四", "五", "六", "日"].map(w => `<div class="h">周${w}</div>`).join("");
+  for (let r = 0; r < 6; r++) {
+    for (let c = 0; c < 7; c++) {
+      const d = addDays(gridStart, r * 7 + c), key = ymd(d), m = dayMeta(d);
+      const cls = ["c"];
+      if (d.getMonth() !== state.cursor.getMonth()) cls.push("other");
+      if (m.off) cls.push("off");
+      const lab = m.off ? m.off : (m.work ? "班" : (m.lunar.festival || m.lunar.short));
+      html += `<div class="${cls.join(" ")}"><div class="dn">${d.getDate()} <span class="dl">${esc(lab)}</span></div>`;
+      printItems(key).forEach(o => {
+        const ev = o.ev;
+        html += `<div class="it"><span class="t">${ev.allDay ? "全天" : hhmm(ev.start)}</span>${esc(ev.title)}</div>`;
+      });
+      html += `</div>`;
+    }
+  }
+  return html + `</div>` + printFoot();
+}
+
+function buildTodoPrint() {
+  const items = listItems();
+  const groups = listGroups(items);
+  const order = [["late", "已逾期"], ["today", "今天"], ["tomorrow", "明天"], ["week", "本周内"], ["later", "以后"], ["done", "已完成"]];
+  let html = `<h1>待办清单<small>${ymd(new Date())} 起</small></h1>
+    <div class="sub">方框可手写勾选；带「高/中/低」的是优先级。</div>`;
+  let n = 0;
+  order.forEach(([k, name]) => {
+    let list = groups[k];
+    if (k === "done" && !printShowDone) return;
+    if (!list.length) return;
+    n += list.length;
+    html += `<div class="pr-sec"><h3>${name}<span class="n">${list.length} 项</span></h3>`;
+    list.forEach(it => {
+      const ev = it.ev;
+      const time = ev.allDay ? "全天" : hhmm(ev.start);
+      const tags = (ev.tags || []).map(t => "#" + t).join(" ");
+      html += `<div class="pr-item${ev.done ? " done" : ""}"><span class="box"></span>
+        <span class="tm">${it.date.slice(5)} ${time}</span>
+        <span class="tt">${esc(ev.title)}${tags ? ` <span class="tg">${esc(tags)}</span>` : ""}${ev.repeat !== "none" ? ` <span class="tg">↻</span>` : ""}</span>
+        ${ev.priority ? `<span class="pr-p">${PRIO[ev.priority]}</span>` : ""}</div>`;
+    });
+    html += `</div>`;
+  });
+  if (!n) html += `<div class="sub">（当前筛选下没有待办）</div>`;
+  return html + printFoot();
+}
+
+function buildPrintDoc() {
+  return printKind === "month" ? buildMonthPrint() : printKind === "todo" ? buildTodoPrint() : buildWeekPrint();
+}
+
+function openPrint(kind) {
+  if (kind) printKind = kind;
+  document.getElementById("printRoot").classList.add("open");
+  paintPrint();
+}
+function paintPrint() {
+  document.getElementById("prPage").innerHTML = buildPrintDoc();
+  document.querySelectorAll("#prKind button").forEach(b => b.classList.toggle("on", b.dataset.kind === printKind));
+  document.getElementById("prTitle").textContent =
+    "打印预览 · " + ({ week: "周计划", month: "月计划", todo: "待办清单" })[printKind];
+}
+const printName = () => ({
+  week: `周计划-${ymd(startOfWeek(state.cursor))}.html`,
+  month: `月计划-${state.cursor.getFullYear()}-${pad(state.cursor.getMonth() + 1)}.html`,
+  todo: `待办清单-${ymd(new Date())}.html`
+})[printKind];
+
+/* 完整的独立 HTML（另存为时用，双击即可打开/打印） */
+function standaloneHTML() {
+  const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>${esc(printName())}</title>
+<style>${css}</style><style>body{background:#fff;overflow:auto}#printRoot{display:block!important;position:static}
+.pr-bar{display:none}.pr-paper{padding:0;overflow:visible}.pr-page{box-shadow:none;width:auto;padding:0;margin:0}</style>
+</head><body><div id="printRoot"><div class="pr-page">${buildPrintDoc()}</div></div><\/body></html>`;
+}
+
+function doPrint() {
+  if (hasBridge()) bridge.postMessage(JSON.stringify({ cmd: "print" }));
+  else window.print();
+}
+function doExportPDF() {
+  if (hasBridge()) bridge.postMessage(JSON.stringify({ cmd: "export-pdf", name: printName().replace(/\.html$/, ".pdf") }));
+  else toast("浏览器模式下请用打印对话框里的「另存为 PDF」");
+}
+function doSaveHTML() {
+  const html = standaloneHTML();
+  if (hasBridge()) bridge.postMessage(JSON.stringify({ cmd: "save-html", name: printName(), html: html }));
+  else {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    a.download = printName();
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("已下载 HTML");
+  }
+}
+window.__calSaved = name => toast("已保存：" + name);
+window.__calSaveFailed = msg => toast("保存失败：" + msg);
+
+document.getElementById("prKind").onclick = e => {
+  const b = e.target.closest("[data-kind]");
+  if (!b) return;
+  printKind = b.dataset.kind;
+  paintPrint();
+};
+document.getElementById("prDone").onchange = e => { printShowDone = e.target.checked; paintPrint(); };
+document.getElementById("prPrint").onclick = doPrint;
+document.getElementById("prPdf").onclick = doExportPDF;
+document.getElementById("prSave").onclick = doSaveHTML;
+document.getElementById("prClose").onclick = () => document.getElementById("printRoot").classList.remove("open");
+
+/* ---------- 筛选面板 ---------- */
+const filterPop = document.getElementById("filterPop");
+
+function tagCounts() {
+  const m = new Map();
+  state.events.forEach(e => (e.tags || []).forEach(t => m.set(t, (m.get(t) || 0) + 1)));
+  return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+}
+
+function paintFilterPop() {
+  const tp = document.getElementById("tagPick");
+  const counts = tagCounts();
+  tp.innerHTML = counts.length
+    ? counts.map(([t, n]) => `<span class="${state.tagFilter.includes(t) ? "on" : ""}" data-pick-tag="${esc(t)}">${esc(t)} ${n}</span>`).join("")
+    : `<span style="color:var(--muted);font-size:12px">还没有用过标签</span>`;
+  const cp = document.getElementById("colorPick");
+  cp.innerHTML = COLORS.map(c => `<i class="${state.colorFilter === c ? "on" : ""}" data-pick-color="${c}" title="${CNAME[c]}" style="--c:${RGB[c].join(",")}"></i>`).join("");
+  document.querySelectorAll("#statusPick button").forEach(b => b.classList.toggle("on", b.dataset.status === (state.status || "open")));
+  document.getElementById("filterBtn").classList.toggle("on", hasFilter());
+}
+
+function hasFilter() {
+  return !!(state.tagFilter.length || state.colorFilter || (state.view === "list" && state.status !== "open") || state.query);
+}
+
+function paintActiveFilters() {
+  const bar = document.getElementById("activeFilters");
+  const chips = [];
+  if (state.query) chips.push({ k: "query", label: "搜索：" + state.query });
+  state.tagFilter.forEach(t => chips.push({ k: "tag", v: t, label: "#" + t }));
+  if (state.colorFilter) chips.push({ k: "color", label: "颜色：" + CNAME[state.colorFilter] });
+  if (state.view === "list" && state.status !== "open") {
+    chips.push({ k: "status", label: state.status === "done" ? "只看已完成" : "含已完成" });
+  }
+  if (!chips.length) { bar.style.display = "none"; bar.innerHTML = ""; return; }
+  bar.style.display = "";
+  bar.innerHTML = `<span>筛选中：</span>` +
+    chips.map(c => `<span class="fchip" data-unfilter="${c.k}" ${c.v ? `data-unfilter-v="${esc(c.v)}"` : ""}>${esc(c.label)} <b>×</b></span>`).join("") +
+    `<span class="fclear" id="filterClearAll">清除全部</span>`;
+}
+
+function clearFilters() {
+  state.query = ""; state.tagFilter = []; state.colorFilter = ""; state.status = "open";
+  const se = document.getElementById("search"); if (se) se.value = "";
+  save(); render();
+}
+
+document.getElementById("filterBtn").onclick = e => {
+  e.stopPropagation();
+  paintFilterPop();
+  filterPop.classList.toggle("open");
+};
+filterPop.onclick = e => {
+  e.stopPropagation();
+  const t = e.target.closest("[data-pick-tag]");
+  const c = e.target.closest("[data-pick-color]");
+  const st = e.target.closest("#statusPick button");
+  if (t) {
+    const v = t.dataset.pickTag;
+    state.tagFilter = state.tagFilter.includes(v) ? state.tagFilter.filter(x => x !== v) : state.tagFilter.concat(v);
+  } else if (c) {
+    const v = c.dataset.pickColor;
+    state.colorFilter = state.colorFilter === v ? "" : v;
+  } else if (st) {
+    state.status = st.dataset.status;
+  } else if (e.target.closest("#filterClear")) {
+    return clearFilters();
+  } else return;
+  save(); render(); paintFilterPop();
+};
+document.addEventListener("click", () => filterPop.classList.remove("open"));
+document.getElementById("activeFilters").onclick = e => {
+  if (e.target.closest("#filterClearAll")) return clearFilters();
+  const chip = e.target.closest("[data-unfilter]");
+  if (!chip) return;
+  const k = chip.dataset.unfilter;
+  if (k === "query") state.query = "";
+  else if (k === "tag") state.tagFilter = state.tagFilter.filter(t => t !== chip.dataset.unfilterV);
+  else if (k === "color") state.colorFilter = "";
+  else if (k === "status") state.status = "open";
+  const se = document.getElementById("search"); if (se) se.value = state.query;
+  save(); render();
+};
+
+/* =====================================================================
+   统计面板：全部用 DOM 手写图表，不依赖任何图表库
+   ===================================================================== */
+let statsPeriod = "week";
+
+function statsRange(period) {
+  const today0 = dayStart(new Date());
+  if (period === "week") { const f = startOfWeek(today0); return [f, addDays(f, 6), "本周"]; }
+  if (period === "month") {
+    return [new Date(today0.getFullYear(), today0.getMonth(), 1),
+      new Date(today0.getFullYear(), today0.getMonth() + 1, 0), "本月"];
+  }
+  const dates = state.events.map(e => parseYMD(e.date).getTime());
+  const lo = dates.length ? new Date(Math.min.apply(null, dates)) : today0;
+  const hi = dates.length ? new Date(Math.max.apply(null, dates)) : today0;
+  const floor = addDays(today0, -730);                       // 最多回溯两年，避免无限重复展开过多
+  return [lo < floor ? floor : lo, hi, "全部"];
+}
+
+function computeStats(period) {
+  const [from, to, label] = statsRange(period);
+  const occ = occurrences(from, to);
+  const st = {
+    label: label, from: from, to: to, total: occ.length, done: 0, late: 0, minutes: 0, allday: 0,
+    byTag: new Map(), byColor: new Map(), byPrio: [0, 0, 0, 0], byDay: new Map(), noTag: 0
+  };
+  const todayKey = ymd(dayStart(new Date()));
+  occ.forEach(o => {
+    const ev = o.ev;
+    if (ev.done) st.done++;
+    else if (ev.dueDate < todayKey) st.late++;
+    const mins = ev.allDay ? 0 : Math.max(0, toMin(ev.end) - toMin(ev.start));
+    if (ev.allDay) st.allday++; else st.minutes += mins;
+    st.byColor.set(ev.color, (st.byColor.get(ev.color) || 0) + 1);
+    st.byPrio[ev.priority]++;
+    st.byDay.set(o.date, (st.byDay.get(o.date) || 0) + 1);
+    const tags = ev.tags || [];
+    if (!tags.length) st.noTag++;
+    tags.forEach(t => {
+      const cur = st.byTag.get(t) || { n: 0, done: 0, min: 0 };
+      cur.n++; if (ev.done) cur.done++; cur.min += mins;
+      st.byTag.set(t, cur);
+    });
+  });
+  return st;
+}
+
+const fmtHours = m => m >= 60 ? (Math.round(m / 6) / 10) + " h" : m + " 分";
+
+function openStats() {
+  document.getElementById("stats").classList.add("open");
+  paintStats();
+}
+
+function paintStats() {
+  const st = computeStats(statsPeriod);
+  document.querySelectorAll("#stPeriod button").forEach(b => b.classList.toggle("on", b.dataset.period === statsPeriod));
+  const pct = st.total ? Math.round(st.done / st.total * 100) : 0;
+  const days = [];
+  for (let d = new Date(st.from); d <= st.to && days.length < 400; d = addDays(d, 1)) days.push(ymd(d));
+  const maxDay = Math.max(1, Math.max.apply(null, days.map(k => st.byDay.get(k) || 0)));
+  const maxTag = Math.max(1, Math.max.apply(null, Array.from(st.byTag.values()).map(v => v.n)));
+  const maxColor = Math.max(1, Math.max.apply(null, Array.from(st.byColor.values())));
+
+  const showDays = days.length <= 31 ? days : days.slice(-31);   // 太长时只画最近 31 天
+  let html = `
+    <div class="st-cards">
+      <div class="st-card"><div class="n">${st.total}</div><div class="l">${st.label}事项</div></div>
+      <div class="st-card"><div class="n">${pct}%</div><div class="l">完成率（${st.done}/${st.total}）</div></div>
+      <div class="st-card${st.late ? " warn" : ""}"><div class="n">${st.late}</div><div class="l">已逾期未完成</div></div>
+      <div class="st-card"><div class="n">${st.minutes ? fmtHours(st.minutes) : "0"}</div><div class="l">定时事项总时长</div></div>
+      <div class="st-card"><div class="n">${st.allday}</div><div class="l">全天事项</div></div>
+    </div>`;
+
+  if (days.length > 1) {
+    html += `<div class="st-sec"><h4>每日分布 <em>${showDays.length < days.length ? "（显示最近 31 天）" : ""}</em></h4>
+      <div class="st-days">` + showDays.map(k => {
+        const n = st.byDay.get(k) || 0;
+        const h = n ? Math.max(6, Math.round(n / maxDay * 78)) : 2;
+        const d = parseYMD(k);
+        return `<div class="d${n ? " has" : ""}${k === ymd(new Date()) ? " today" : ""}" title="${k}：${n} 项">
+          <i style="height:${h}px"></i><b>${d.getDate()}</b></div>`;
+      }).join("") + `</div></div>`;
+  }
+
+  const tagRows = Array.from(st.byTag.entries()).sort((a, b) => b[1].n - a[1].n || b[1].min - a[1].min);
+  html += `<div class="st-sec"><h4>标签 <em>共 ${st.byTag.size} 个</em></h4>`;
+  if (!tagRows.length) html += `<div class="st-note">还没有使用标签。编辑事项时加上标签（或用快速添加语法 #标签），这里就会按标签汇总。</div>`;
+  tagRows.forEach(([t, v]) => {
+    html += `<div class="st-row"><span class="name">#${esc(t)}</span>
+      <span class="track"><i style="width:${Math.round(v.n / maxTag * 100)}%"></i></span>
+      <span class="val">${v.n} 项 · ${v.min ? fmtHours(v.min) : "—"}${v.done ? " · 完成" + Math.round(v.done / v.n * 100) + "%" : ""}</span></div>`;
+  });
+  if (st.noTag) html += `<div class="st-note">另有 ${st.noTag} 项没有标签。</div>`;
+  html += `</div>`;
+
+  html += `<div class="st-sec"><h4>颜色分布</h4>`;
+  COLORS.forEach(c => {
+    const n = st.byColor.get(c) || 0;
+    if (!n) return;
+    html += `<div class="st-row"><span class="name">${CNAME[c]}</span>
+      <span class="track"><i style="width:${Math.round(n / maxColor * 100)}%;background:rgb(${RGB[c].join(",")})"></i></span>
+      <span class="val">${n} 项 · ${Math.round(n / Math.max(1, st.total) * 100)}%</span></div>`;
+  });
+  if (!st.total) html += `<div class="st-note">该时间段内没有事项。</div>`;
+  html += `</div>`;
+
+  const prioName = ["无优先级", "低", "中", "高"];
+  html += `<div class="st-sec"><h4>优先级</h4>` +
+    [3, 2, 1, 0].map(p => `<div class="st-row"><span class="name">${prioName[p]}</span>
+      <span class="track"><i style="width:${st.total ? Math.round(st.byPrio[p] / st.total * 100) : 0}%"></i></span>
+      <span class="val">${st.byPrio[p]} 项</span></div>`).join("") + `</div>`;
+
+  if (hasFilter()) {
+    html += `<div class="st-note">提示：当前有筛选条件生效，以上统计只包含筛选后的事项（可在顶栏筛选按钮里清除）。</div>`;
+  }
+  html += `<div class="st-note">统计口径：重复事项按所选时间段内的每次出现各计一次；"总时长"只累加定时事项（全天事项不计时长）。</div>`;
+
+  document.getElementById("statsBody").innerHTML = html;
+}
+
+document.getElementById("stClose").onclick = () => document.getElementById("stats").classList.remove("open");
+document.getElementById("stats").addEventListener("mousedown", e => {
+  if (e.target === document.getElementById("stats")) e.target.classList.remove("open");
+});
+document.getElementById("stPeriod").onclick = e => {
+  const b = e.target.closest("[data-period]");
+  if (!b) return;
+  statsPeriod = b.dataset.period;
+  paintStats();
+};
+
+/* ---------- 版本历史 ---------- */
+const historyEl = document.getElementById("history");
+
+function fmtTime(ms) {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+function ago(ms) {
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return s + " 秒前";
+  if (s < 3600) return Math.round(s / 60) + " 分钟前";
+  if (s < 86400) return Math.round(s / 3600) + " 小时前";
+  return Math.round(s / 86400) + " 天前";
+}
+
+async function openHistory() {
+  historyEl.classList.add("open");
+  document.getElementById("hList").innerHTML = `<div class="hint">读取中…</div>`;
+  if (!HAS_SERVER) {
+    document.getElementById("hNote").textContent = "浏览器模式（未连接本地服务）没有版本历史。";
+    document.getElementById("hList").innerHTML = `<div class="hint">用窗口版打开时，每次保存前都会自动备份。</div>`;
+    return;
+  }
+  await refreshHistory();
+}
+
+async function refreshHistory() {
+  const list = document.getElementById("hList");
+  try {
+    const r = await fetch("/api/backups", { cache: "no-store" });
+    const d = await r.json();
+    const items = d.backups || [];
+    document.getElementById("hNote").textContent =
+      `每次覆盖保存前自动留一份快照（最短间隔 ${d.interval} 秒，最多保留 ${d.keep} 份）；恢复前也会先备份当前状态。`;
+    if (!items.length) {
+      list.innerHTML = `<div class="hint">还没有备份。点下面「立即备份」可以马上存一份。</div>`;
+      return;
+    }
+    list.innerHTML = items.map((b, i) => `<div class="hrow${i === 0 ? " cur" : ""}">
+        <div class="ht"><b>${fmtTime(b.mtime)}</b>${i === 0 ? ' <span class="tag">最新</span>' : ""}
+          <div>${ago(b.mtime)} · ${b.count} 条事项 · ${(b.size / 1024).toFixed(1)} KB · ${esc(b.name)}</div></div>
+        <button class="btn" data-restore="${esc(b.name)}" style="height:30px;padding:0 11px">恢复</button>
+      </div>`).join("");
+  } catch (e) {
+    list.innerHTML = `<div class="hint">读取失败：${esc(String(e))}</div>`;
+  }
+}
+
+async function restoreBackup(name) {
+  if (!confirm("用这份备份覆盖当前事项？\n\n" + name + "\n\n（当前状态会先自动备份，可再恢复回来）")) return;
+  try {
+    const r = await fetch("/api/restore", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name })
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || "恢复失败");
+    applyDoc(d.doc);
+    mirrorLocal(Number(d.doc.updatedAt) || Date.now());
+    dirtySinceBoot = false;
+    render();
+    toast("已恢复 " + (d.doc.events || []).length + " 条事项");
+    await refreshHistory();
+  } catch (e) {
+    toast("恢复失败：" + e.message);
+  }
+}
+
+document.getElementById("hClose").onclick = () => historyEl.classList.remove("open");
+document.getElementById("hClose2").onclick = () => historyEl.classList.remove("open");
+historyEl.addEventListener("mousedown", e => { if (e.target === historyEl) historyEl.classList.remove("open"); });
+document.getElementById("hList").onclick = e => {
+  const b = e.target.closest("[data-restore]");
+  if (b) restoreBackup(b.dataset.restore);
+};
+document.getElementById("hNow").onclick = async () => {
+  if (!HAS_SERVER) return toast("浏览器模式不支持服务端备份");
+  try {
+    const d = await (await fetch("/api/backup-now", { method: "POST" })).json();
+    toast(d.name ? "已备份：" + d.name : "备份失败");
+    await refreshHistory();
+  } catch (e) { toast("备份失败：" + e.message); }
+};
+
+/* ---------- 快速添加弹窗 ---------- */
+const quick = document.getElementById("quick");
+const qInput = document.getElementById("qInput");
+
+function openQuickAdd(initial) {
+  quick.classList.add("open");
+  qInput.value = initial || "";
+  paintQuickPreview();
+  setTimeout(() => { qInput.focus(); qInput.select(); }, 50);
+}
+function closeQuickAdd() { quick.classList.remove("open"); }
+
+/* 把解析结果渲染成人类可读的一行，避免"我以为它懂了" */
+function paintQuickPreview() {
+  const el = document.getElementById("qPreview");
+  const text = qInput.value.trim();
+  if (!text) {
+    el.innerHTML = `<span class="k">示例：</span><em>明天 10:00 项目例会 #工作 !高 45min</em>`;
+    return;
+  }
+  const p = parseQuickAdd(text);
+  const d = parseYMD(p.date);
+  const meta = dayMeta(d);
+  const timeTxt = p.allDay ? "全天" : (p.start + (p.end ? "–" + p.end : ""));
+  const parts = [];
+  parts.push(`<span class="k">标题</span><span class="title-preview">${esc(p.title || "（未命名事项）")}</span>`);
+  parts.push(`<span class="k">日期</span><span class="v">${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${WD[d.getDay()]}</span>` +
+    (meta.lunar ? ` <em>${esc(meta.lunar.text)}${meta.off ? " · " + esc(meta.off) + "休" : meta.work ? " · 调休上班" : ""}</em>` : ""));
+  parts.push(`<span class="k">时间</span><span class="v">${timeTxt}</span>`);
+  if (p.repeat !== "none") {
+    const rn = { daily: "每天", weekly: "每周", monthly: "每月" }[p.repeat];
+    parts.push(`<span class="k">重复</span><span class="v">${rn}${p.skipRest ? "（跳过周末与假日）" : ""}</span>`);
+  }
+  if (p.priority) parts.push(`<span class="k">优先级</span><span class="prio ${PRIO_CLASS[p.priority]}">${PRIO[p.priority]}</span>`);
+  if (p.tags.length) parts.push(`<span class="k">标签</span>` + p.tags.map(t => `<span class="tag">${esc(t)}</span>`).join(" "));
+  if (!p.title) parts.push(`<span class="warn">⚠ 还没写事项内容</span>`);
+  el.innerHTML = parts.map(x => `<div>${x}</div>`).join("");
+}
+
+function createFromQuickAdd() {
+  const text = qInput.value.trim();
+  if (!text) return;
+  const p = parseQuickAdd(text);
+  if (!p.title) { toast("请再写点事项内容"); qInput.focus(); return; }
+  const ev = normalize(Object.assign({
+    id: uid(), color: pickColor(), note: "", done: false, until: "", skip: []
+  }, {
+    title: p.title, date: p.date, start: p.start, end: p.end, allDay: p.allDay,
+    repeat: p.repeat, skipRest: p.skipRest, tags: p.tags, priority: p.priority, due: ""
+  }));
+  pushUndo("快速添加");
+  state.events.push(ev);
+  save(); closeQuickAdd(); toast("已添加：" + ev.title); render();
+}
+
 /* ---------- 弹窗 ---------- */
 const editor = document.getElementById("editor");
 const help = document.getElementById("help");
@@ -1182,6 +2405,47 @@ COLORS.forEach(c => {
   b.onclick = () => { if (editing) editing.data.color = c; paintSwatches(); };
   fColors.appendChild(b);
 });
+/* ---------- 标签编辑 ---------- */
+function paintTagEditor() {
+  const wrap = document.getElementById("fTagWrap");
+  const input = document.getElementById("fTagInput");
+  if (!wrap || !input) return;
+  wrap.querySelectorAll(".tag-chip").forEach(el => el.remove());
+  (editing && editing.data.tags ? editing.data.tags : []).forEach(t => {
+    const el = document.createElement("span");
+    el.className = "tag-chip";
+    el.innerHTML = esc(t) + ' <b title="移除">×</b>';
+    el.querySelector("b").onclick = () => {
+      editing.data.tags = editing.data.tags.filter(x => x !== t);
+      paintTagEditor();
+    };
+    wrap.insertBefore(el, input);
+  });
+}
+
+function addTagsFromInput() {
+  const input = document.getElementById("fTagInput");
+  if (!input || !editing) return;
+  const parts = input.value.split(/[,，、\s]+/).map(t => t.replace(/^#/, "").trim()).filter(Boolean);
+  if (parts.length) {
+    editing.data.tags = Array.from(new Set((editing.data.tags || []).concat(parts))).slice(0, 8);
+  }
+  input.value = "";
+  paintTagEditor();
+}
+
+/* 所有已用过的标签，供输入时自动补全 */
+function allTags() {
+  const set = new Set();
+  state.events.forEach(e => (e.tags || []).forEach(t => set.add(t)));
+  return Array.from(set).sort();
+}
+function refreshTagSuggest() {
+  const dl = document.getElementById("tagSuggest");
+  if (!dl) return;
+  dl.innerHTML = allTags().map(t => `<option value="${esc(t)}"></option>`).join("");
+}
+
 function paintSwatches() {
   [...fColors.children].forEach(el => el.classList.toggle("on", editing && el.dataset.color === editing.data.color));
 }
@@ -1199,7 +2463,13 @@ function openEditor(cfg) {
   document.getElementById("fEnd").value = d.end || "10:00";
   document.getElementById("fRepeat").value = d.repeat || "none";
   document.getElementById("fUntil").value = d.until || "";
+  document.getElementById("fSkipRest").checked = !!d.skipRest;
   document.getElementById("fNote").value = d.note || "";
+  document.getElementById("fPriority").value = String(d.priority || 0);
+  document.getElementById("fDue").value = d.due || "";
+  editing.data.tags = Array.isArray(d.tags) ? d.tags.slice() : [];
+  refreshTagSuggest();
+  paintTagEditor();
   document.getElementById("edDelete").style.display = cfg.mode === "edit" ? "" : "none";
   const tip = document.getElementById("seriesTip");
   if (cfg.seriesDate && d.repeat !== "none") {
@@ -1279,15 +2549,21 @@ function saveEditor() {
     repeat: document.getElementById("fRepeat").value,
     until: document.getElementById("fRepeat").value === "none" ? "" : document.getElementById("fUntil").value,
     color: editing.data.color,
-    note: document.getElementById("fNote").value.trim()
+    note: document.getElementById("fNote").value.trim(),
+    priority: Number(document.getElementById("fPriority").value) || 0,
+    due: document.getElementById("fDue").value || "",
+    tags: (editing.data.tags || []).slice(),
+    skipRest: document.getElementById("fSkipRest").checked
   };
 
   if (editing.mode === "new") {
+    pushUndo("新建「" + title + "」");
     state.events.push(normalize(Object.assign({ id: uid(), skip: [] }, patch)));
     toast("已添加：" + title);
   } else {
     const ev = getEvent(editing.data.id);
     if (ev) {
+      pushUndo("修改「" + (ev.title || title) + "」");
       Object.assign(ev, patch);
       if (ev.repeat !== "none" && editing.seriesDate && ev.date !== editing.seriesDate) {
         // 用户修改了重复系列的某一次日期：把整个系列起点移到新日期
@@ -1300,21 +2576,32 @@ function saveEditor() {
 }
 
 /* ---------- 增删改查交互 ---------- */
+function toggleDone(id, silent) {
+  const ev = getEvent(id);
+  if (!ev) return;
+  pushUndo(ev.done ? "取消完成" : "标记完成");
+  ev.done = !ev.done;
+  save();
+  if (!silent) { render(); toast(ev.done ? "已完成：" + ev.title : "已取消完成"); }
+}
 function deleteEvent() {
   if (!editing || editing.mode !== "edit") return;
   const ev = getEvent(editing.data.id);
   if (!ev) return closeEditor();
   if (editing.seriesDate && ev.repeat !== "none") {
     if (editing.seriesDate !== ev.date) {
+      pushUndo("删除重复中的一次");
       // 删除单次：加入例外日期
       ev.skip = Array.from(new Set(ev.skip.concat([editing.seriesDate])));
       toast("已删除这一次（系列保留）");
     } else {
       if (!confirm("删除整个重复系列？")) return;
+      pushUndo("删除系列「" + ev.title + "」");
       state.events = state.events.filter(e => e.id !== ev.id);
       toast("已删除系列");
     }
   } else {
+    pushUndo("删除「" + ev.title + "」");
     state.events = state.events.filter(e => e.id !== ev.id);
     toast("已删除");
   }
@@ -1322,6 +2609,18 @@ function deleteEvent() {
 }
 
 viewEl.addEventListener("click", e => {
+  const check = e.target.closest("[data-check]");
+  if (check) { e.stopPropagation(); toggleDone(check.dataset.check); return; }
+  const tagEl = e.target.closest("[data-tag]");
+  if (tagEl) {
+    e.stopPropagation();
+    const t = tagEl.dataset.tag;
+    state.tagFilter = state.tagFilter.includes(t) ? state.tagFilter.filter(x => x !== t) : state.tagFilter.concat(t);
+    render(); return;
+  }
+  if (e.target.closest("#quickBtn")) { openQuickAdd(""); return; }
+  const st = e.target.closest("[data-status]");
+  if (st) { state.status = st.dataset.status; save(); render(); return; }
   const goto = e.target.closest("[data-goto]");
   const add = e.target.closest("[data-add]");
   const chip = e.target.closest("[data-id]");
@@ -1405,6 +2704,7 @@ function highlightTarget(x, y) {
 }
 function applyDrop(ev, t) {
   const before = JSON.stringify([ev.date, ev.start, ev.end, ev.allDay]);
+  const beforeAll = snapshotEvents();
   if (t.minutes != null) {
     const dur = Math.max(15, (toMin(ev.end) || toMin(ev.start) + 60) - toMin(ev.start));
     ev.date = t.date;
@@ -1416,6 +2716,7 @@ function applyDrop(ev, t) {
     if (t.allDay) { ev.allDay = true; ev.start = ""; ev.end = ""; }
   }
   if (JSON.stringify([ev.date, ev.start, ev.end, ev.allDay]) !== before) {
+    pushUndoSnapshot("移动「" + ev.title + "」", beforeAll);
     save(); render();
     toast(ev.allDay ? `已移到 ${ev.date}` : `已移到 ${ev.date} ${ev.start}`);
   }
@@ -1475,6 +2776,7 @@ document.getElementById("fileInput").onchange = e => {
       if (!Array.isArray(list)) throw new Error("格式不正确");
       const mode = state.events.length ? confirm("确定用备份替换现有 " + state.events.length + " 条事项？\n（点「取消」则追加导入）") : true;
       const incoming = list.map(normalize);
+      pushUndo("导入 " + incoming.length + " 条事项");
       state.events = mode ? incoming : state.events.concat(incoming);
       save(); render(); toast("已导入 " + incoming.length + " 条事项");
     } catch (err) { alert("导入失败：" + err.message); }
@@ -1491,22 +2793,45 @@ document.getElementById("mSample").onclick = () => {
     { title: "健身 / 散步", date: ymd(addDays(t, 1)), start: "19:00", end: "20:00", color: "green", repeat: "weekly" },
     { title: "月度复盘", date: ymd(new Date(t.getFullYear(), t.getMonth(), 1)), allDay: true, color: "amber", repeat: "monthly" }
   ];
+  pushUndo("载入示例事项");
   state.events = state.events.concat(demo.map(normalize));
   save(); render(); toast("已载入 5 条示例事项");
 };
 document.getElementById("mClear").onclick = () => {
   if (!state.events.length) return toast("当前没有事项");
-  if (!confirm("确定清空全部 " + state.events.length + " 条事项？此操作不可撤销。")) return;
-  state.events = []; save(); render(); toast("已清空");
+  if (!confirm("确定清空全部 " + state.events.length + " 条事项？\n（清空后可以用 Ctrl+Z 撤销，或从版本历史恢复）")) return;
+  pushUndo("清空全部事项");
+  state.events = []; save(); render(); toast("已清空（可 Ctrl+Z 撤销）");
 };
 document.getElementById("mHelp").onclick = () => help.classList.add("open");
+document.getElementById("mQuick").onclick = () => openQuickAdd("");
+document.getElementById("mStats").onclick = () => openStats();
+document.getElementById("mPrint").onclick = () => openPrint();
+document.getElementById("mUndo").onclick = () => undo();
+document.getElementById("mHistory").onclick = () => openHistory();
 
 /* 弹窗按钮 */
+qInput.addEventListener("input", paintQuickPreview);
+qInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); createFromQuickAdd(); }
+});
+document.getElementById("qCreate").onclick = createFromQuickAdd;
+document.getElementById("qClose").onclick = closeQuickAdd;
+document.getElementById("qCancel").onclick = closeQuickAdd;
+quick.addEventListener("mousedown", e => { if (e.target === quick) closeQuickAdd(); });
 document.getElementById("edClose").onclick = closeEditor;
 document.getElementById("edCancel").onclick = closeEditor;
 document.getElementById("edSave").onclick = saveEditor;
 document.getElementById("edDelete").onclick = deleteEvent;
 document.getElementById("fAllDay").onchange = syncAllDay;
+const tagInput = document.getElementById("fTagInput");
+tagInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" || e.key === "," || e.key === "，") { e.preventDefault(); addTagsFromInput(); }
+  else if (e.key === "Backspace" && !tagInput.value && editing && editing.data.tags.length) {
+    editing.data.tags.pop(); paintTagEditor();
+  }
+});
+tagInput.addEventListener("blur", addTagsFromInput);
 document.getElementById("fDate").onchange = updateDateInfo;
 editor.addEventListener("mousedown", e => { if (e.target === editor) closeEditor(); });
 help.addEventListener("click", e => { if (e.target === help || e.target.closest("[data-close-help]")) help.classList.remove("open"); });
@@ -1516,6 +2841,10 @@ document.getElementById("fTitle").addEventListener("keydown", e => { if (e.key =
 document.addEventListener("keydown", e => {
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if (e.key === "Escape") {
+    if (historyEl.classList.contains("open")) return historyEl.classList.remove("open");
+    if (document.getElementById("printRoot").classList.contains("open")) return document.getElementById("printRoot").classList.remove("open");
+    if (document.getElementById("stats").classList.contains("open")) return document.getElementById("stats").classList.remove("open");
+    if (quick.classList.contains("open")) return closeQuickAdd();
     if (editor.classList.contains("open")) return closeEditor();
     if (help.classList.contains("open")) return help.classList.remove("open");
     if (document.body.classList.contains("searching")) { document.body.classList.remove("searching"); }
@@ -1526,12 +2855,22 @@ document.addEventListener("keydown", e => {
     if (editor.classList.contains("open")) { e.preventDefault(); saveEditor(); }
     return;
   }
+  const inField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if ((e.ctrlKey || e.metaKey) && !inField) {
+    const kk = e.key.toLowerCase();
+    if (kk === "z" && !e.shiftKey) { e.preventDefault(); return undo(); }
+    if (kk === "y" || (kk === "z" && e.shiftKey)) { e.preventDefault(); return redo(); }
+  }
   if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
   if (k === "n") { e.preventDefault(); newEvent({}); }
   else if (k === "d") { state.view = "day"; dirtyScroll = true; save(); render(); }
   else if (k === "w") { state.view = "week"; dirtyScroll = true; save(); render(); }
   else if (k === "m") { state.view = "month"; dirtyScroll = true; save(); render(); }
+  else if (k === "l") { state.view = "list"; dirtyScroll = true; save(); render(); }
+  else if (k === "q") { e.preventDefault(); openQuickAdd(""); }
+  else if (k === "s") { e.preventDefault(); openStats(); }
+  else if (k === "p") { e.preventDefault(); openPrint(); }
   else if (k === "t") { state.cursor = new Date(); dirtyScroll = true; render(); }
   else if (k === "arrowleft") { e.preventDefault(); shift(-1); }
   else if (k === "arrowright") { e.preventDefault(); shift(1); }
@@ -1555,9 +2894,10 @@ updateHolidayNote();
 if (!state.view) state.view = "month";
 try {                                    // 支持 ?view=day&date=2026-10-11
   const q = new URLSearchParams(location.search);
-  if (["day", "week", "month"].includes(q.get("view"))) state.view = q.get("view");
+  if (["day", "week", "month", "list"].includes(q.get("view"))) state.view = q.get("view");
   if (/^\d{4}-\d{2}-\d{2}$/.test(q.get("date") || "")) state.cursor = parseYMD(q.get("date"));
 } catch (e) { /* 忽略 */ }
+refreshTagSuggest();
 render();                 // 先用浏览器里的镜像秒开（无白屏）
 syncFromServer();         // 再与本地数据文件对齐
 loadHolidays();           // 节假日数据（有 holidays.json 则以其为准）

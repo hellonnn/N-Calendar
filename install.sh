@@ -11,7 +11,7 @@ set -uo pipefail
 DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 APPS="$HOME/.local/share/applications"
 DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || echo "$HOME/Desktop")"
-ENTRY="local-calendar.desktop"
+ENTRY="local-calendar-1.0.desktop"
 
 say() { printf '%s\n' "$*"; }
 
@@ -20,11 +20,11 @@ write_entry() {
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=日历
-Name[zh_CN]=日历
-Name[en]=Calendar
+Name=日历 1.0
+Name[zh_CN]=日历 1.0
+Name[en]=Calendar 1.0
 GenericName=日历工具
-Comment=本地日历小窗口：按日 / 周 / 月安排事项
+Comment=本地日历 1.0：待办清单 / 标签 / 统计 / 打印
 Comment[en]=Local calendar window (day / week / month)
 Exec=python3 $DIR/calendar_app.py
 Path=$DIR
@@ -33,7 +33,7 @@ Terminal=false
 Categories=Utility;Calendar;
 Keywords=calendar;日历;日程;todo;
 StartupNotify=true
-StartupWMClass=calendar
+StartupWMClass=calendar-1.0
 EOF
   then
     say "错误：写入失败 $1（无权限或文件系统只读）" >&2
