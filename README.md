@@ -63,7 +63,6 @@ calendar_1.0/
 ├── tools/make-holidays.py 依据官方通知生成节假日数据
 ├── preview/               界面预览图
 ├── 使用说明书.md
-└── 源码说明.md
 ```
 
 ## 运行环境
